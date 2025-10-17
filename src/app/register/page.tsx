@@ -551,14 +551,21 @@ export default function ShramicRegistration() {
                 <span className="text-sm font-medium text-gray-700">Enter your enterprise mobile number</span>
               </div>
               <p className="text-xs text-gray-600 mb-6">Supports global formats with AI-enhanced validation.</p>
-              <InputField
-                type="tel"
-                value={phoneNumber}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhoneNumber(e.target.value)}
-                placeholder="+91 98765 43210"
-                label=""
-                inputKey="phone"
-              />
+              <motion.input
+  type="tel"
+  inputMode="numeric"
+  value={phoneNumber}
+  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/[^\d+\-\s()]/g, '');
+    setPhoneNumber(value);
+  }}
+  placeholder="+91 98765 43210"
+  className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:border-gradient-to-r focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100/50 outline-none transition-all duration-300 bg-white/80 backdrop-blur-sm hover:shadow-md"
+  whileFocus={{ scale: 1.02, boxShadow: "0 10px 25px rgba(16, 185, 129, 0.2)" }}
+  initial={{ opacity: 0, y: 10 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.3, delay: 0.1 }}
+/>
             </motion.div>
             <motion.button
               type="submit"
