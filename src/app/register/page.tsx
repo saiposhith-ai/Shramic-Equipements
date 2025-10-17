@@ -1,19 +1,21 @@
 "use client";
+
 import { useState, useEffect, useRef } from "react";
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult, User } from "firebase/auth";
 import { getFirestore, collection, addDoc } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { Camera, Upload, CheckCircle, User as UserIcon, Package, FileText, Shield } from "lucide-react";
+import { Camera, Upload, CheckCircle, User as UserIcon, Package, FileText, Shield, Phone, Mail, MapPin, Building, CreditCard, File, AlertCircle, Zap, Sparkles } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion"; // Added for micro-animations and motion design
 
 // Firebase config from environment variables
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ,
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
@@ -85,6 +87,7 @@ export default function ShramicRegistration() {
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [documentFiles, setDocumentFiles] = useState<File[]>([]);
+  const [hoveredInput, setHoveredInput] = useState<string>(""); // For cursor interactions
   const recaptchaContainerRef = useRef<HTMLDivElement | null>(null);
 
   const [sellerData, setSellerData] = useState<SellerData>({
@@ -322,17 +325,185 @@ export default function ShramicRegistration() {
   };
 
   const renderStepIndicator = () => (
-    <div className="flex items-center justify-center mb-8">
-      <div className="flex items-center space-x-4">
-        {[1, 2, 3, 4].map((s) => (
-          <div key={s} className="flex items-center">
-            <div className={`flex items-center justify-center w-10 h-10 rounded-full font-semibold transition-all ${
-              step >= s ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg' : 'bg-gray-200 text-gray-500'
-            }`}>
-              {s < step ? <CheckCircle className="w-5 h-5" /> : s}
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      transition={{ duration: 0.6 }}
+      className="flex items-center justify-center mb-12"
+    >
+      <div className="flex items-center space-x-6 bg-white/90 backdrop-blur-sm px-8 py-4 rounded-3xl shadow-xl border border-gray-100/50">
+        <AnimatePresence>
+          {[1, 2, 3, 4].map((s, index) => (
+            <motion.div 
+              key={s} 
+              initial={{ scale: 0.8, opacity: 0.5 }} 
+              animate={{ scale: step >= s ? 1 : 0.8, opacity: step >= s ? 1 : 0.5 }} 
+              transition={{ duration: 0.4, delay: index * 0.1 }}
+              className="flex items-center relative"
+            >
+              <motion.div 
+                className={`flex items-center justify-center w-12 h-12 rounded-full font-bold text-sm transition-all duration-300 ${
+                  step >= s ? 'bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-600 text-white shadow-lg ring-2 ring-emerald-200' : 'bg-gray-100 text-gray-500 ring-1 ring-gray-200'
+                }`}
+                whileHover={step >= s ? { scale: 1.05, rotate: 5 } : {}}
+              >
+                {s < step ? <CheckCircle className="w-5 h-5" /> : s}
+              </motion.div>
+              {s < 4 && (
+                <motion.div 
+                  className={`absolute top-6 left-full w-16 h-1 transform -translate-x-6 ${step > s ? 'bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-600' : 'bg-gray-200'}`}
+                  initial={{ width: 0 }} 
+                  animate={{ width: step > s ? '4rem' : 0 }} 
+                  transition={{ duration: 0.6 }}
+                />
+              )}
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+    </motion.div>
+  );
+
+  const InputField = ({ label, name, value, onChange, type = "text", required = false, placeholder = "", rows, inputKey }: any) => (
+    <motion.div 
+      className="space-y-1 group"
+      whileHover={{ y: -2 }}
+      onHoverStart={() => setHoveredInput(inputKey)}
+      onHoverEnd={() => setHoveredInput("")}
+    >
+      <label className="block text-sm font-semibold text-gray-700 flex items-center space-x-2">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      {type === "textarea" ? (
+        <motion.textarea
+          name={name}
+          value={value}
+          onChange={onChange}
+          rows={rows || 3}
+          placeholder={placeholder}
+          className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:border-gradient-to-r focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100/50 outline-none transition-all duration-300 bg-white/80 backdrop-blur-sm resize-none hover:shadow-md"
+          required={required}
+          whileFocus={{ scale: 1.02, boxShadow: "0 10px 25px rgba(16, 185, 129, 0.2)" }}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        />
+      ) : (
+        <motion.input
+          type={type}
+          name={name}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:border-gradient-to-r focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100/50 outline-none transition-all duration-300 bg-white/80 backdrop-blur-sm hover:shadow-md"
+          required={required}
+          whileFocus={{ scale: 1.02, boxShadow: "0 10px 25px rgba(16, 185, 129, 0.2)" }}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+        />
+      )}
+    </motion.div>
+  );
+
+  const SelectField = ({ label, name, value, onChange, children, required = false }: any) => (
+    <motion.div className="space-y-1 group" whileHover={{ y: -2 }}>
+      <label className="block text-sm font-semibold text-gray-700">{label} {required && <span className="text-red-500">*</span>}</label>
+      <motion.select
+        name={name}
+        value={value}
+        onChange={onChange}
+        className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100/50 outline-none transition-all duration-300 bg-white/80 backdrop-blur-sm hover:shadow-md cursor-pointer"
+        required={required}
+        whileFocus={{ scale: 1.02 }}
+      >
+        {children}
+      </motion.select>
+    </motion.div>
+  );
+
+  const FileInput = ({ label, onChange, accept, multiple = true, maxFiles, required = false }: any) => (
+    <motion.div className="space-y-2 group" whileHover={{ scale: 1.02 }}>
+      <label className="block text-sm font-semibold text-gray-700 flex items-center space-x-2">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      <motion.div 
+        className="relative bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-dashed border-gray-300 rounded-2xl p-8 hover:border-emerald-400 transition-all duration-300 cursor-pointer overflow-hidden"
+        whileHover={{ borderColor: "#10B981", backgroundColor: "rgba(16, 185, 129, 0.05)" }}
+      >
+        <motion.div 
+          className="absolute inset-0 bg-gradient-to-br from-emerald-500/0 via-purple-500/0 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+        />
+        <input
+          type="file"
+          multiple={multiple}
+          accept={accept}
+          onChange={onChange}
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          required={required}
+        />
+        <div className="text-center flex flex-col items-center space-y-3 relative z-10">
+          <motion.div 
+            animate={{ rotate: hoveredInput === "file" ? 360 : 0 }} 
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="p-3 bg-white rounded-full shadow-lg"
+          >
+            <Upload className="w-6 h-6 text-gray-400 group-hover:text-emerald-500 transition-colors duration-300" />
+          </motion.div>
+          <motion.p 
+            className="text-sm text-gray-600 group-hover:text-gray-800 font-medium"
+            whileHover={{ scale: 1.05 }}
+          >
+            Click or drag to upload
+          </motion.p>
+          {maxFiles && <p className="text-xs text-gray-400">Max {maxFiles} files</p>}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+
+  const RadioGroup = ({ name, value, onChange, options, title }: any) => (
+    <div className="space-y-3">
+      <h4 className="text-lg font-semibold text-gray-800 flex items-center space-x-2">
+        <Zap className="w-5 h-5 text-emerald-600" />
+        <span>{title}</span>
+      </h4>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {options.map((option: any, index: number) => (
+          <motion.label 
+            key={option.value} 
+            className="relative p-5 border border-gray-200 rounded-xl hover:border-emerald-300 cursor-pointer transition-all duration-300 group overflow-hidden"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: index * 0.1 }}
+            whileHover={{ scale: 1.02, boxShadow: "0 10px 20px rgba(16, 185, 129, 0.15)" }}
+          >
+            <motion.div 
+              className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity"
+            />
+            <input
+              type="radio"
+              name={name}
+              value={option.value}
+              checked={value === option.value}
+              onChange={onChange}
+              className="absolute opacity-0 w-0 h-0"
+            />
+            <div className="flex items-center space-x-3 relative z-10">
+              <motion.div 
+                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
+                  value === option.value ? 'bg-gradient-to-r from-emerald-500 to-blue-600 border-transparent' : 'border-gray-300'
+                }`}
+                animate={value === option.value ? { scale: 1.2 } : {}}
+              >
+                {value === option.value && <Sparkles className="w-3 h-3 text-white" />}
+              </motion.div>
+              <div>
+                <div className="font-semibold text-gray-800">{option.label}</div>
+                <p className="text-sm text-gray-600">{option.desc}</p>
+              </div>
             </div>
-            {s < 4 && <div className={`w-16 h-1 mx-2 ${step > s ? 'bg-blue-500' : 'bg-gray-200'}`} />}
-          </div>
+          </motion.label>
         ))}
       </div>
     </div>
@@ -341,447 +512,951 @@ export default function ShramicRegistration() {
   const renderStepContent = () => {
     if (step === 1) {
       return (
-        <div className="space-y-6">
-          <div className="text-center">
-            <h3 className="text-2xl font-bold text-gray-800 mb-2">Welcome to Shramic</h3>
-            <p className="text-gray-600">Let's verify your phone number to get started</p>
-          </div>
-          <form onSubmit={handleSendOtp} className="space-y-4">
-            <div className="info-box">
-              <p className="text-sm text-gray-700 mb-2">
-                <span className="font-semibold">📱 Enter your number with country code</span>
-              </p>
-              <p className="text-xs text-gray-600">Examples: +919876543210 (India), +11234567890 (US)</p>
-            </div>
-            <input
-              type="tel"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              placeholder="+919876543210"
-              className="input-modern"
-              required
-            />
-            <button type="submit" disabled={isLoading} className="btn-primary">
-              {isLoading ? <><span className="spinner"></span>{loadingMessage}</> : "Send Verification Code"}
-            </button>
+        <motion.div 
+          initial={{ opacity: 0 }} 
+          animate={{ opacity: 1 }} 
+          transition={{ duration: 0.5 }}
+          className="space-y-8"
+        >
+          <motion.div 
+            initial={{ scale: 0.95 }} 
+            animate={{ scale: 1 }} 
+            className="text-center space-y-4"
+          >
+            <motion.div 
+              className="inline-flex items-center space-x-2 bg-gradient-to-r from-emerald-100 via-blue-100 to-purple-100 px-6 py-3 rounded-full shadow-lg"
+              whileHover={{ scale: 1.05 }}
+            >
+              <Phone className="w-5 h-5 text-emerald-600" />
+              <h3 className="text-xl font-bold text-gray-800">AI-Powered Secure Verification</h3>
+            </motion.div>
+            <motion.p 
+              className="text-gray-600 max-w-md mx-auto"
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              transition={{ delay: 0.2 }}
+            >
+              Experience seamless identity verification tailored for enterprise security.
+            </motion.p>
+          </motion.div>
+          <form onSubmit={handleSendOtp} className="space-y-6">
+            <motion.div 
+              className="bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50 p-8 rounded-3xl border border-emerald-100 shadow-xl"
+              initial={{ y: 20, opacity: 0 }} 
+              animate={{ y: 0, opacity: 1 }} 
+              transition={{ delay: 0.3 }}
+            >
+              <div className="flex items-center space-x-3 mb-4">
+                <Phone className="w-5 h-5 text-emerald-600 animate-pulse" />
+                <span className="text-sm font-medium text-gray-700">Enter your enterprise mobile number</span>
+              </div>
+              <p className="text-xs text-gray-600 mb-6">Supports global formats with AI-enhanced validation.</p>
+              <InputField
+                type="tel"
+                value={phoneNumber}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhoneNumber(e.target.value)}
+                placeholder="+91 98765 43210"
+                label=""
+                inputKey="phone"
+              />
+            </motion.div>
+            <motion.button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-600 text-white font-semibold py-4 px-6 rounded-2xl hover:from-emerald-600 hover:via-blue-600 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-emerald-200/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-xl hover:shadow-2xl relative overflow-hidden"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              initial={{ y: 10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.4 }}
+            >
+              <AnimatePresence mode="wait">
+                {isLoading ? (
+                  <motion.span 
+                    key="loading"
+                    initial={{ opacity: 0 }} 
+                    animate={{ opacity: 1 }} 
+                    exit={{ opacity: 0 }}
+                    className="flex items-center justify-center space-x-2"
+                  >
+                    <motion.div 
+                      className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    />
+                    <span>{loadingMessage}</span>
+                  </motion.span>
+                ) : (
+                  <motion.span 
+                    key="send"
+                    initial={{ opacity: 0 }} 
+                    animate={{ opacity: 1 }} 
+                    exit={{ opacity: 0 }}
+                  >
+                    Send Verification Code
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button>
           </form>
-        </div>
+        </motion.div>
       );
     }
 
     if (step === 2) {
       return (
-        <div className="space-y-6">
-          <div className="text-center">
-            <h3 className="text-2xl font-bold text-gray-800 mb-2">Verify Your Number</h3>
-            <p className="text-gray-600">Enter the 6-digit code sent to {phoneNumber}</p>
-          </div>
-          <form onSubmit={handleVerifyOtp} className="space-y-4">
-            <input
-              type="text"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
-              placeholder="000000"
-              className="input-modern text-center text-2xl tracking-widest"
-              maxLength={6}
-              required
-            />
-            <button type="submit" disabled={isLoading} className="btn-success">
-              {isLoading ? <><span className="spinner"></span>{loadingMessage}</> : "Verify & Continue"}
-            </button>
-            <button
+        <motion.div 
+          initial={{ opacity: 0 }} 
+          animate={{ opacity: 1 }} 
+          className="space-y-8"
+        >
+          <motion.div 
+            initial={{ scale: 0.95 }} 
+            animate={{ scale: 1 }} 
+            className="text-center space-y-4"
+          >
+            <motion.div 
+              className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-100 via-emerald-100 to-purple-100 px-6 py-3 rounded-full shadow-lg"
+              whileHover={{ scale: 1.05 }}
+            >
+              <CheckCircle className="w-5 h-5 text-blue-600 animate-bounce" />
+              <h3 className="text-xl font-bold text-gray-800">AI-Enhanced Identity Confirmation</h3>
+            </motion.div>
+            <motion.p 
+              className="text-gray-600 max-w-md mx-auto"
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              transition={{ delay: 0.2 }}
+            >
+              Input the 6-digit code delivered to <span className="font-semibold text-emerald-600">{phoneNumber}</span>
+            </motion.p>
+          </motion.div>
+          <form onSubmit={handleVerifyOtp} className="space-y-6">
+            <motion.div 
+              className="bg-gradient-to-br from-blue-50 via-emerald-50 to-purple-50 p-8 rounded-3xl border border-blue-100 shadow-xl relative"
+              initial={{ y: 20, opacity: 0 }} 
+              animate={{ y: 0, opacity: 1 }} 
+              transition={{ delay: 0.3 }}
+            >
+              <InputField
+                type="text"
+                value={otp}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOtp(e.target.value)}
+                placeholder="Enter 6-digit code"
+                label=""
+                inputKey="otp"
+                className="text-center text-3xl font-mono tracking-widest bg-transparent border-0 focus:ring-0"
+              />
+              <motion.div 
+                className="absolute top-4 right-4 text-xs text-gray-500"
+                animate={{ opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                Resend in 30s
+              </motion.div>
+            </motion.div>
+            <motion.button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-gradient-to-r from-blue-500 via-emerald-500 to-purple-600 text-white font-semibold py-4 px-6 rounded-2xl hover:from-blue-600 hover:via-emerald-600 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-blue-200/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-xl hover:shadow-2xl"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <AnimatePresence mode="wait">
+                {isLoading ? (
+                  <motion.span 
+                    key="loading"
+                    className="flex items-center justify-center space-x-2"
+                  >
+                    <motion.div 
+                      className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    />
+                    <span>{loadingMessage}</span>
+                  </motion.span>
+                ) : (
+                  <motion.span key="verify">Verify & Unlock Enterprise Access</motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button>
+            <motion.button
               onClick={() => { setStep(1); setError(''); setOtp(''); }}
               type="button"
-              className="w-full text-sm text-blue-600 hover:text-blue-700 font-medium"
+              className="w-full text-sm text-gray-600 hover:text-emerald-600 font-medium transition-all duration-300 flex items-center justify-center space-x-2"
+              whileHover={{ scale: 1.05 }}
             >
-              Change phone number
-            </button>
+              <AlertCircle className="w-4 h-4" />
+              <span>Modify Contact Details</span>
+            </motion.button>
           </form>
-        </div>
+        </motion.div>
       );
     }
 
     if (step === 3) {
       return (
-        <div className="space-y-6">
-          <div className="section-header">
-            <UserIcon className="w-6 h-6 text-blue-600" />
-            <h3>Seller Information</h3>
-          </div>
-          <form onSubmit={(e) => { e.preventDefault(); setStep(4); }} className="space-y-6">
-            <div className="info-box">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Account Type</label>
-              <div className="radio-group">
-                <label className="radio-label">
-                  <input
-                    type="radio"
-                    name="sellerType"
-                    value="individual"
-                    checked={sellerData.sellerType === "individual"}
-                    onChange={handleSellerInputChange}
-                    className="radio-input"
-                  />
-                  <span className="text-gray-700">Individual</span>
-                </label>
-                <label className="radio-label">
-                  <input
-                    type="radio"
-                    name="sellerType"
-                    value="company"
-                    checked={sellerData.sellerType === "company"}
-                    onChange={handleSellerInputChange}
-                    className="radio-input"
-                  />
-                  <span className="text-gray-700">Company</span>
-                </label>
-              </div>
-            </div>
+        <motion.div 
+          initial={{ opacity: 0 }} 
+          animate={{ opacity: 1 }} 
+          className="space-y-8"
+        >
+          <motion.div 
+            initial={{ scale: 0.95 }} 
+            animate={{ scale: 1 }} 
+            className="flex items-center space-x-3 mb-6"
+          >
+            <motion.div 
+              animate={{ rotate: [0, 10, -10, 0] }} 
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              <UserIcon className="w-7 h-7 text-gradient-to-r from-emerald-600 via-blue-600 to-purple-600" />
+            </motion.div>
+            <h3 className="text-3xl font-bold text-gray-800">Enterprise Profile Builder</h3>
+          </motion.div>
+          <form onSubmit={(e) => { e.preventDefault(); setStep(4); }} className="space-y-8">
+            <motion.div 
+              className="bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50 p-8 rounded-3xl border border-emerald-100 shadow-xl"
+              initial={{ y: 20, opacity: 0 }} 
+              animate={{ y: 0, opacity: 1 }}
+            >
+              <RadioGroup
+                name="sellerType"
+                value={sellerData.sellerType}
+                onChange={handleSellerInputChange}
+                options={[
+                  { value: "individual", label: "Solo Entrepreneur", desc: "Personalized equipment offerings" },
+                  { value: "company", label: "Corporate Entity", desc: "Scalable business inventory management" }
+                ]}
+                title="Business Structure"
+              />
+            </motion.div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="form-label">Full Name *</label>
-                <input type="text" name="sellerName" value={sellerData.sellerName} onChange={handleSellerInputChange} className="input-modern" required />
-              </div>
+            <motion.div 
+              className="grid grid-cols-1 md:grid-cols-2 gap-6"
+              initial="hidden"
+              variants={{
+                hidden: { opacity: 0 },
+                visible: { opacity: 1 }
+              }}
+              animate="visible"
+              transition={{ staggerChildren: 0.1 }}
+            >
+              <InputField
+                label="Executive Name"
+                name="sellerName"
+                value={sellerData.sellerName}
+                onChange={handleSellerInputChange}
+                required
+                inputKey="name"
+              />
               {sellerData.sellerType === "company" && (
-                <div>
-                  <label className="form-label">Company Name *</label>
-                  <input type="text" name="companyName" value={sellerData.companyName} onChange={handleSellerInputChange} className="input-modern" required />
-                </div>
+                <InputField
+                  label="Corporate Entity Name"
+                  name="companyName"
+                  value={sellerData.companyName}
+                  onChange={handleSellerInputChange}
+                  required
+                  inputKey="company"
+                />
               )}
-              <div>
-                <label className="form-label">Email Address *</label>
-                <input type="email" name="email" value={sellerData.email} onChange={handleSellerInputChange} className="input-modern" required />
-              </div>
-              <div>
-                <label className="form-label">Phone Number *</label>
-                <input type="tel" name="phone" value={sellerData.phone} onChange={handleSellerInputChange} className="input-modern" required />
-              </div>
-              <div>
-                <label className="form-label">Alternative Contact</label>
-                <input type="tel" name="alternativeContact" value={sellerData.alternativeContact} onChange={handleSellerInputChange} className="input-modern" />
-              </div>
-            </div>
+              <InputField
+                type="email"
+                label="Corporate Email"
+                name="email"
+                value={sellerData.email}
+                onChange={handleSellerInputChange}
+                required
+                inputKey="email"
+              />
+              <InputField
+                type="tel"
+                label="Primary Hotline"
+                name="phone"
+                value={sellerData.phone}
+                onChange={handleSellerInputChange}
+                required
+                inputKey="phone2"
+              />
+              <InputField
+                type="tel"
+                label="Secondary Contact"
+                name="alternativeContact"
+                value={sellerData.alternativeContact}
+                onChange={handleSellerInputChange}
+                inputKey="alt"
+              />
+            </motion.div>
 
-            <div>
-              <label className="form-label">Address *</label>
-              <input type="text" name="address" value={sellerData.address} onChange={handleSellerInputChange} className="input-modern" required />
-            </div>
+            <InputField
+              label="Headquarters Address"
+              name="address"
+              value={sellerData.address}
+              onChange={handleSellerInputChange}
+              required
+              inputKey="address"
+            />
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="form-label">City *</label>
-                <input type="text" name="city" value={sellerData.city} onChange={handleSellerInputChange} className="input-modern" required />
-              </div>
-              <div>
-                <label className="form-label">State *</label>
-                <input type="text" name="state" value={sellerData.state} onChange={handleSellerInputChange} className="input-modern" required />
-              </div>
-              <div>
-                <label className="form-label">ZIP Code *</label>
-                <input type="text" name="zipCode" value={sellerData.zipCode} onChange={handleSellerInputChange} className="input-modern" required />
-              </div>
-            </div>
+            <motion.div 
+              className="grid grid-cols-1 md:grid-cols-3 gap-6"
+              initial="hidden"
+              variants={{
+                hidden: { opacity: 0 },
+                visible: { opacity: 1 }
+              }}
+              animate="visible"
+              transition={{ staggerChildren: 0.1 }}
+            >
+              <InputField
+                label="City Hub"
+                name="city"
+                value={sellerData.city}
+                onChange={handleSellerInputChange}
+                required
+                inputKey="city"
+              />
+              <InputField
+                label="Region / State"
+                name="state"
+                value={sellerData.state}
+                onChange={handleSellerInputChange}
+                required
+                inputKey="state"
+              />
+              <InputField
+                label="Postal Identifier"
+                name="zipCode"
+                value={sellerData.zipCode}
+                onChange={handleSellerInputChange}
+                required
+                inputKey="zip"
+              />
+            </motion.div>
 
             {sellerData.sellerType === "company" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="form-label">Business Registration Number</label>
-                  <input type="text" name="businessRegNumber" value={sellerData.businessRegNumber} onChange={handleSellerInputChange} className="input-modern" />
-                </div>
-                <div>
-                  <label className="form-label">Tax ID / GST Number</label>
-                  <input type="text" name="taxId" value={sellerData.taxId} onChange={handleSellerInputChange} className="input-modern" />
-                </div>
-              </div>
+              <motion.div 
+                className="grid grid-cols-1 md:grid-cols-2 gap-6"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                transition={{ duration: 0.5 }}
+              >
+                <InputField
+                  label="Corporate Registration ID"
+                  name="businessRegNumber"
+                  value={sellerData.businessRegNumber}
+                  onChange={handleSellerInputChange}
+                  inputKey="reg"
+                />
+                <InputField
+                  label="Fiscal Tax Identifier"
+                  name="taxId"
+                  value={sellerData.taxId}
+                  onChange={handleSellerInputChange}
+                  inputKey="tax"
+                />
+              </motion.div>
             )}
 
-            <div className="border-t pt-6">
-              <h4 className="text-lg font-semibold text-gray-800 mb-4">Payment Information</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="form-label">Bank Account Number</label>
-                  <input type="text" name="bankAccountNumber" value={sellerData.bankAccountNumber} onChange={handleSellerInputChange} className="input-modern" />
-                </div>
-                <div>
-                  <label className="form-label">Bank Name</label>
-                  <input type="text" name="bankName" value={sellerData.bankName} onChange={handleSellerInputChange} className="input-modern" />
-                </div>
-                <div>
-                  <label className="form-label">IFSC Code</label>
-                  <input type="text" name="ifscCode" value={sellerData.ifscCode} onChange={handleSellerInputChange} className="input-modern" />
-                </div>
-                <div>
-                  <label className="form-label">Payment Terms</label>
-                  <select name="paymentTerms" value={sellerData.paymentTerms} onChange={handleSellerInputChange} className="input-modern">
-                    <option value="immediate">Immediate</option>
-                    <option value="7days">7 Days</option>
-                    <option value="15days">15 Days</option>
-                    <option value="30days">30 Days</option>
-                  </select>
-                </div>
+            <motion.div 
+              className="bg-white/70 backdrop-blur-sm p-8 rounded-3xl border border-gray-100 shadow-xl"
+              initial={{ y: 20, opacity: 0 }} 
+              animate={{ y: 0, opacity: 1 }}
+            >
+              <h4 className="text-xl font-semibold text-gray-800 mb-6 flex items-center space-x-2">
+                <CreditCard className="w-6 h-6 text-gradient-to-r from-emerald-600 to-purple-600" />
+                <span>Financial Gateway Integration</span>
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <InputField
+                  label="Account Number"
+                  name="bankAccountNumber"
+                  value={sellerData.bankAccountNumber}
+                  onChange={handleSellerInputChange}
+                  inputKey="account"
+                />
+                <InputField
+                  label="Institution Name"
+                  name="bankName"
+                  value={sellerData.bankName}
+                  onChange={handleSellerInputChange}
+                  inputKey="bank"
+                />
+                <InputField
+                  label="Swift / Routing Code"
+                  name="ifscCode"
+                  value={sellerData.ifscCode}
+                  onChange={handleSellerInputChange}
+                  inputKey="ifsc"
+                />
+                <SelectField
+                  label="Settlement Cycle"
+                  name="paymentTerms"
+                  value={sellerData.paymentTerms}
+                  onChange={handleSellerInputChange}
+                >
+                  <option value="immediate">Instant Settlement</option>
+                  <option value="7days">Net 7 Days</option>
+                  <option value="15days">Net 15 Days</option>
+                  <option value="30days">Net 30 Days</option>
+                </SelectField>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="border-t pt-6">
-              <h4 className="text-lg font-semibold text-gray-800 mb-4">Policies</h4>
-              <div className="space-y-4">
-                <div>
-                  <label className="form-label">Cancellation Policy</label>
-                  <textarea name="cancellationPolicy" value={sellerData.cancellationPolicy} onChange={handleSellerInputChange} className="input-modern" rows={3} placeholder="Describe your cancellation policy..." />
-                </div>
-                <div>
-                  <label className="form-label">Damage Policy</label>
-                  <textarea name="damagePolicy" value={sellerData.damagePolicy} onChange={handleSellerInputChange} className="input-modern" rows={3} placeholder="Describe your damage policy..." />
-                </div>
-                <div>
-                  <label className="form-label">Insurance Policy</label>
-                  <textarea name="insurancePolicy" value={sellerData.insurancePolicy} onChange={handleSellerInputChange} className="input-modern" rows={3} placeholder="Describe your insurance policy..." />
-                </div>
+            <motion.div 
+              className="bg-white/70 backdrop-blur-sm p-8 rounded-3xl border border-gray-100 shadow-xl"
+              initial={{ y: 20, opacity: 0 }} 
+              animate={{ y: 0, opacity: 1 }}
+            >
+              <h4 className="text-xl font-semibold text-gray-800 mb-6 flex items-center space-x-2">
+                <File className="w-6 h-6 text-gradient-to-r from-emerald-600 to-purple-600" />
+                <span>Risk Management Protocols</span>
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <InputField
+                  label="Cancellation Framework"
+                  name="cancellationPolicy"
+                  value={sellerData.cancellationPolicy}
+                  onChange={handleSellerInputChange}
+                  type="textarea"
+                  placeholder="Define escalation procedures and refund matrices..."
+                  inputKey="cancel"
+                />
+                <InputField
+                  label="Liability Assessment Model"
+                  name="damagePolicy"
+                  value={sellerData.damagePolicy}
+                  onChange={handleSellerInputChange}
+                  type="textarea"
+                  placeholder="Quantify remediation costs and accountability chains..."
+                  inputKey="damage"
+                />
+                <InputField
+                  label="Coverage & Indemnity Scope"
+                  name="insurancePolicy"
+                  value={sellerData.insurancePolicy}
+                  onChange={handleSellerInputChange}
+                  type="textarea"
+                  placeholder="Specify actuarial limits and carrier endorsements..."
+                  inputKey="insure"
+                />
               </div>
-            </div>
+            </motion.div>
 
-            <div>
-              <label className="form-label">Identification Documents</label>
-              <input type="file" multiple accept=".pdf,.jpg,.jpeg,.png" onChange={handleDocumentChange} className="file-input-modern" />
-              <p className="text-xs text-gray-500 mt-1">Upload ID proof, business registration, etc. (Max 5 files)</p>
-            </div>
+            <FileInput
+              label="Compliance Documentation Upload"
+              onChange={handleDocumentChange}
+              accept=".pdf,.jpg,.jpeg,.png"
+              maxFiles={5}
+              inputKey="doc"
+            />
+            <motion.p 
+              className="text-xs text-gray-500 text-center"
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              transition={{ delay: 0.5 }}
+            >
+              Regulatory filings, executive IDs, fiscal proofs (Max 5 files, 10MB each)
+            </motion.p>
 
-            <button type="submit" className="btn-primary">
-              Continue to Equipment Details
-            </button>
+            <motion.button
+              type="submit"
+              className="w-full bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-600 text-white font-semibold py-4 px-6 rounded-2xl hover:from-emerald-600 hover:via-blue-600 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-emerald-200/50 transition-all duration-300 shadow-xl hover:shadow-2xl"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              Activate Equipment Catalog
+            </motion.button>
           </form>
-        </div>
+        </motion.div>
       );
     }
 
     if (step === 4) {
       if (submissionSuccess) {
         return (
-          <div className="success-container">
-            <div className="success-icon">
-              <CheckCircle className="h-12 w-12 text-white" />
-            </div>
-            <h3 className="text-3xl font-bold text-gray-800 mb-2">Registration Successful!</h3>
-            <p className="text-gray-600 mb-1">Your equipment has been registered successfully.</p>
-            <p className="text-gray-500">Redirecting to dashboard...</p>
-          </div>
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            className="text-center py-12 space-y-6"
+          >
+            <motion.div 
+              className="mx-auto bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-600 rounded-3xl h-32 w-32 flex items-center justify-center shadow-2xl mb-6"
+              animate={{ rotate: [0, 5, -5, 0], scale: [1, 1.05, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              <CheckCircle className="h-16 w-16 text-white" />
+            </motion.div>
+            <motion.h3 
+              className="text-4xl font-bold bg-gradient-to-r from-emerald-600 via-blue-600 to-purple-700 bg-clip-text text-transparent mb-3"
+              initial={{ scale: 0.5 }} 
+              animate={{ scale: 1 }} 
+              transition={{ duration: 0.5 }}
+            >
+              Enterprise Onboarding Complete!
+            </motion.h3>
+            <motion.p 
+              className="text-xl text-gray-600 mb-2"
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              transition={{ delay: 0.2 }}
+            >
+              Your profile and asset portfolio are now live in our ecosystem.
+            </motion.p>
+            <motion.p 
+              className="text-gray-500"
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              transition={{ delay: 0.4 }}
+            >
+              AI review underway. Dashboard access in moments...
+            </motion.p>
+            <motion.div 
+              className="flex justify-center"
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              transition={{ delay: 0.6 }}
+            >
+              <motion.div 
+                className="w-12 h-12 border-4 border-emerald-200 border-t-gradient-to-r from-emerald-500 to-purple-600 rounded-full"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              />
+            </motion.div>
+          </motion.div>
         );
       }
 
       return (
-        <div className="space-y-6">
-          <div className="section-header">
-            <Package className="w-6 h-6 text-blue-600" />
-            <h3>Equipment Details</h3>
-          </div>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2">
-                <label className="form-label">Equipment Title *</label>
-                <input type="text" name="title" value={equipmentData.title} onChange={handleEquipmentInputChange} className="input-modern" placeholder="e.g., Canon EOS 80D Camera" required />
-              </div>
-              <div>
-                <label className="form-label">Category *</label>
-                <select name="category" value={equipmentData.category} onChange={handleEquipmentInputChange} className="input-modern" required>
-                  <option value="">Select Category</option>
-                  <option value="camera">Camera & Photography</option>
-                  <option value="heavy-machinery">Heavy Machinery</option>
-                  <option value="power-tools">Power Tools</option>
-                  <option value="electronics">Electronics</option>
-                  <option value="construction">Construction Equipment</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-              <div>
-                <label className="form-label">Brand / Manufacturer *</label>
-                <input type="text" name="brand" value={equipmentData.brand} onChange={handleEquipmentInputChange} className="input-modern" required />
-              </div>
-              <div>
-                <label className="form-label">Model Number *</label>
-                <input type="text" name="model" value={equipmentData.model} onChange={handleEquipmentInputChange} className="input-modern" required />
-              </div>
-              <div>
-                <label className="form-label">Condition *</label>
-                <select name="condition" value={equipmentData.condition} onChange={handleEquipmentInputChange} className="input-modern">
-                  <option value="New">New</option>
-                  <option value="Like New">Like New</option>
-                  <option value="Used">Used</option>
-                  <option value="Well-Maintained">Well-Maintained</option>
-                  <option value="Refurbished">Refurbished</option>
-                </select>
-              </div>
-            </div>
+        <motion.div 
+          initial={{ opacity: 0 }} 
+          animate={{ opacity: 1 }} 
+          className="space-y-8"
+        >
+          <motion.div 
+            initial={{ scale: 0.95 }} 
+            animate={{ scale: 1 }} 
+            className="flex items-center space-x-3 mb-6"
+          >
+            <motion.div 
+              animate={{ rotate: [0, 10, -10, 0] }} 
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              <Package className="w-7 h-7 text-gradient-to-r from-emerald-600 via-blue-600 to-purple-600" />
+            </motion.div>
+            <h3 className="text-3xl font-bold text-gray-800">Asset Portfolio Configuration</h3>
+          </motion.div>
+          <form onSubmit={handleSubmit} className="space-y-8">
+            <motion.div 
+              className="grid grid-cols-1 md:grid-cols-2 gap-6"
+              initial="hidden"
+              variants={{
+                hidden: { opacity: 0 },
+                visible: { opacity: 1 }
+              }}
+              animate="visible"
+              transition={{ staggerChildren: 0.1 }}
+            >
+              <motion.div className="md:col-span-2">
+                <InputField
+                  label="Asset Designation"
+                  name="title"
+                  value={equipmentData.title}
+                  onChange={handleEquipmentInputChange}
+                  placeholder="e.g., Precision CNC Machining Center - Haas VF-2"
+                  required
+                  inputKey="title"
+                />
+              </motion.div>
+              <SelectField
+                label="Industry Sector"
+                name="category"
+                value={equipmentData.category}
+                onChange={handleEquipmentInputChange}
+                required
+              >
+                <option value="">Select Sector</option>
+                <option value="camera">Media Production Assets</option>
+                <option value="heavy-machinery">Infrastructure Deployment Gear</option>
+                <option value="power-tools">Fabrication Toolkit</option>
+                <option value="electronics">Automation Modules</option>
+                <option value="construction">Site Optimization Equipment</option>
+                <option value="other">Bespoke Industrial Solutions</option>
+              </SelectField>
+              <InputField
+                label="Manufacturer Brand"
+                name="brand"
+                value={equipmentData.brand}
+                onChange={handleEquipmentInputChange}
+                required
+                inputKey="brand"
+              />
+              <InputField
+                label="Model Specification"
+                name="model"
+                value={equipmentData.model}
+                onChange={handleEquipmentInputChange}
+                required
+                inputKey="model"
+              />
+              <SelectField
+                label="Operational Status"
+                name="condition"
+                value={equipmentData.condition}
+                onChange={handleEquipmentInputChange}
+              >
+                <option value="New">Factory Fresh - Uncommissioned</option>
+                <option value="Like New">Near-Mint - Low Cycle</option>
+                <option value="Used">Operational - Proven</option>
+                <option value="Well-Maintained">Serviced - Certified</option>
+                <option value="Refurbished">Revitalized - Warranted</option>
+              </SelectField>
+            </motion.div>
 
-            <div>
-              <label className="form-label">Description *</label>
-              <textarea name="description" value={equipmentData.description} onChange={handleEquipmentInputChange} className="input-modern" rows={4} placeholder="Detailed description of the equipment, features, and capabilities..." required />
-            </div>
+            <InputField
+              label="Comprehensive Asset Narrative"
+              name="description"
+              value={equipmentData.description}
+              onChange={handleEquipmentInputChange}
+              type="textarea"
+              rows={5}
+              placeholder="Elucidate capabilities, synergies, and ROI propositions for discerning procurement teams..."
+              required
+              inputKey="desc"
+            />
 
-            <div>
-              <label className="form-label">Technical Specifications</label>
-              <textarea name="specifications" value={equipmentData.specifications} onChange={handleEquipmentInputChange} className="input-modern" rows={4} placeholder="Size, weight, power requirements, capacity, performance metrics, etc." />
-            </div>
+            <InputField
+              label="Engineering Parameters"
+              name="specifications"
+              value={equipmentData.specifications}
+              onChange={handleEquipmentInputChange}
+              type="textarea"
+              rows={4}
+              placeholder="Delineate tolerances, throughput, interoperability, and scalability metrics..."
+              inputKey="spec"
+            />
 
-            <div className="border-t pt-6">
-              <h4 className="text-lg font-semibold text-gray-800 mb-4">Availability & Pricing</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <label className="form-label">Available For *</label>
-                  <div className="radio-group">
-                    <label className="radio-label">
-                      <input type="radio" name="availableFor" value="sale" checked={equipmentData.availableFor === "sale"} onChange={handleEquipmentInputChange} className="radio-input" />
-                      <span className="text-gray-700">Sale Only</span>
-                    </label>
-                    <label className="radio-label">
-                      <input type="radio" name="availableFor" value="rent" checked={equipmentData.availableFor === "rent"} onChange={handleEquipmentInputChange} className="radio-input" />
-                      <span className="text-gray-700">Rent Only</span>
-                    </label>
-                    <label className="radio-label">
-                      <input type="radio" name="availableFor" value="both" checked={equipmentData.availableFor === "both"} onChange={handleEquipmentInputChange} className="radio-input" />
-                      <span className="text-gray-700">Both</span>
-                    </label>
-                  </div>
-                </div>
+            <motion.div 
+              className="bg-white/70 backdrop-blur-sm p-8 rounded-3xl border border-gray-100 shadow-xl"
+              initial={{ y: 20, opacity: 0 }} 
+              animate={{ y: 0, opacity: 1 }}
+            >
+              <h4 className="text-xl font-semibold text-gray-800 mb-6 flex items-center space-x-2">
+                <CreditCard className="w-6 h-6 text-gradient-to-r from-emerald-600 to-purple-600" />
+                <span>Monetization & Deployment Strategy</span>
+              </h4>
+              <RadioGroup
+                name="availableFor"
+                value={equipmentData.availableFor}
+                onChange={handleEquipmentInputChange}
+                options={[
+                  { value: "sale", label: "Outright Acquisition", desc: "Capital expenditure model" },
+                  { value: "rent", label: "Subscription Leasing", desc: "OpEx recurring revenue" },
+                  { value: "both", label: "Hybrid Flexibility", desc: "Adaptive procurement paths" }
+                ]}
+                title="Transaction Modality"
+              />
+              {(equipmentData.availableFor === "sale" || equipmentData.availableFor === "both") && (
+                <InputField
+                  label="Acquisition Valuation (₹)"
+                  name="salePrice"
+                  value={equipmentData.salePrice}
+                  onChange={handleEquipmentInputChange}
+                  type="number"
+                  placeholder="Benchmarked against market comparables"
+                  required
+                  inputKey="sale"
+                />
+              )}
+              {(equipmentData.availableFor === "rent" || equipmentData.availableFor === "both") && (
+                <motion.div 
+                  className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6"
+                  initial={{ opacity: 0 }} 
+                  animate={{ opacity: 1 }} 
+                  transition={{ delay: 0.2 }}
+                >
+                  <InputField
+                    label="Diurnal Leasing Rate (₹)"
+                    name="rentalPricePerDay"
+                    value={equipmentData.rentalPricePerDay}
+                    onChange={handleEquipmentInputChange}
+                    type="number"
+                    inputKey="day"
+                  />
+                  <InputField
+                    label="Weekly Engagement Fee (₹)"
+                    name="rentalPricePerWeek"
+                    value={equipmentData.rentalPricePerWeek}
+                    onChange={handleEquipmentInputChange}
+                    type="number"
+                    inputKey="week"
+                  />
+                  <InputField
+                    label="Lunar Cycle Pricing (₹)"
+                    name="rentalPricePerMonth"
+                    value={equipmentData.rentalPricePerMonth}
+                    onChange={handleEquipmentInputChange}
+                    type="number"
+                    inputKey="month"
+                  />
+                  <InputField
+                    label="Collateral Requirement (₹)"
+                    name="securityDeposit"
+                    value={equipmentData.securityDeposit}
+                    onChange={handleEquipmentInputChange}
+                    type="number"
+                    inputKey="deposit"
+                  />
+                  <InputField
+                    label="Mobilization Horizon"
+                    name="leadTime"
+                    value={equipmentData.leadTime}
+                    onChange={handleEquipmentInputChange}
+                    placeholder="e.g., 48-72 operational hours"
+                    inputKey="lead"
+                  />
+                </motion.div>
+              )}
+            </motion.div>
 
-                {(equipmentData.availableFor === "sale" || equipmentData.availableFor === "both") && (
-                  <div>
-                    <label className="form-label">Sale Price (₹) *</label>
-                    <input type="number" step="0.01" name="salePrice" value={equipmentData.salePrice} onChange={handleEquipmentInputChange} className="input-modern" required={equipmentData.availableFor === "sale" || equipmentData.availableFor === "both"} />
-                  </div>
-                )}
-
-                {(equipmentData.availableFor === "rent" || equipmentData.availableFor === "both") && (
-                  <>
-                    <div>
-                      <label className="form-label">Rental Price Per Day (₹)</label>
-                      <input type="number" step="0.01" name="rentalPricePerDay" value={equipmentData.rentalPricePerDay} onChange={handleEquipmentInputChange} className="input-modern" />
-                    </div>
-                    <div>
-                      <label className="form-label">Rental Price Per Week (₹)</label>
-                      <input type="number" step="0.01" name="rentalPricePerWeek" value={equipmentData.rentalPricePerWeek} onChange={handleEquipmentInputChange} className="input-modern" />
-                    </div>
-                    <div>
-                      <label className="form-label">Rental Price Per Month (₹)</label>
-                      <input type="number" step="0.01" name="rentalPricePerMonth" value={equipmentData.rentalPricePerMonth} onChange={handleEquipmentInputChange} className="input-modern" />
-                    </div>
-                    <div>
-                      <label className="form-label">Security Deposit (₹)</label>
-                      <input type="number" step="0.01" name="securityDeposit" value={equipmentData.securityDeposit} onChange={handleEquipmentInputChange} className="input-modern" />
-                    </div>
-                    <div>
-                      <label className="form-label">Lead Time (Days)</label>
-                      <input type="text" name="leadTime" value={equipmentData.leadTime} onChange={handleEquipmentInputChange} className="input-modern" placeholder="e.g., 2-3 days" />
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-
-            <div className="border-t pt-6">
-              <h4 className="text-lg font-semibold text-gray-800 mb-4">Delivery & Shipping</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="form-label">Delivery Option *</label>
-                  <select name="deliveryOption" value={equipmentData.deliveryOption} onChange={handleEquipmentInputChange} className="input-modern">
-                    <option value="pickup">Pickup Only</option>
-                    <option value="delivery">Delivery Only</option>
-                    <option value="both">Both Available</option>
-                  </select>
-                </div>
+            <motion.div 
+              className="bg-white/70 backdrop-blur-sm p-8 rounded-3xl border border-gray-100 shadow-xl"
+              initial={{ y: 20, opacity: 0 }} 
+              animate={{ y: 0, opacity: 1 }}
+            >
+              <h4 className="text-xl font-semibold text-gray-800 mb-6 flex items-center space-x-2">
+                <MapPin className="w-6 h-6 text-gradient-to-r from-emerald-600 to-purple-600" />
+                <span>Supply Chain Orchestration</span>
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <SelectField
+                  label="Fulfillment Channels"
+                  name="deliveryOption"
+                  value={equipmentData.deliveryOption}
+                  onChange={handleEquipmentInputChange}
+                >
+                  <option value="pickup">Client Collection</option>
+                  <option value="delivery">Managed Dispatch</option>
+                  <option value="both">Omnichannel Availability</option>
+                </SelectField>
                 {(equipmentData.deliveryOption === "delivery" || equipmentData.deliveryOption === "both") && (
-                  <div>
-                    <label className="form-label">Delivery Fee (₹)</label>
-                    <input type="number" step="0.01" name="deliveryFee" value={equipmentData.deliveryFee} onChange={handleEquipmentInputChange} className="input-modern" />
-                  </div>
+                  <InputField
+                    label="Logistics Surcharge (₹)"
+                    name="deliveryFee"
+                    value={equipmentData.deliveryFee}
+                    onChange={handleEquipmentInputChange}
+                    type="number"
+                    inputKey="fee"
+                  />
                 )}
-                <div>
-                  <label className="form-label">Pickup Location *</label>
-                  <input type="text" name="pickupLocation" value={equipmentData.pickupLocation} onChange={handleEquipmentInputChange} className="input-modern" placeholder="City, State" required />
-                </div>
-                <div>
-                  <label className="form-label">Shipping Weight (kg)</label>
-                  <input type="text" name="shippingWeight" value={equipmentData.shippingWeight} onChange={handleEquipmentInputChange} className="input-modern" />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="form-label">Shipping Dimensions (L x W x H)</label>
-                  <input type="text" name="shippingDimensions" value={equipmentData.shippingDimensions} onChange={handleEquipmentInputChange} className="input-modern" placeholder="e.g., 50cm x 30cm x 20cm" />
-                </div>
+                <InputField
+                  label="Fulfillment Origin"
+                  name="pickupLocation"
+                  value={equipmentData.pickupLocation}
+                  onChange={handleEquipmentInputChange}
+                  placeholder="Strategic distribution nexus"
+                  required
+                  inputKey="location"
+                />
+                <InputField
+                  label="Freight Mass (kg)"
+                  name="shippingWeight"
+                  value={equipmentData.shippingWeight}
+                  onChange={handleEquipmentInputChange}
+                  inputKey="weight"
+                />
+                <InputField
+                  label="Cubic Footprint (L x W x H cm)"
+                  name="shippingDimensions"
+                  value={equipmentData.shippingDimensions}
+                  onChange={handleEquipmentInputChange}
+                  placeholder="e.g., 300 x 150 x 200"
+                  inputKey="dims"
+                />
               </div>
-            </div>
+            </motion.div>
 
-            <div className="border-t pt-6">
-              <h4 className="section-header">
-                <Camera className="w-5 h-5 text-blue-600" />
-                <span>Equipment Images *</span>
+            <motion.div 
+              className="bg-white/70 backdrop-blur-sm p-8 rounded-3xl border border-gray-100 shadow-xl"
+              initial={{ y: 20, opacity: 0 }} 
+              animate={{ y: 0, opacity: 1 }}
+            >
+              <h4 className="text-xl font-semibold text-gray-800 mb-6 flex items-center space-x-2">
+                <Camera className="w-6 h-6 text-gradient-to-r from-emerald-600 to-purple-600" />
+                <span>Immersive Visual Asset Library</span>
               </h4>
-              <div>
-                <label className="form-label">Upload Photos (Up to 10)</label>
-                <input type="file" multiple accept="image/*" onChange={handleImageChange} className="file-input-modern" required />
-                <p className="text-xs text-gray-500 mt-1">Upload high-quality images from multiple angles</p>
+              <FileInput
+                label="High-Fidelity Imagery Upload"
+                onChange={handleImageChange}
+                accept="image/*"
+                maxFiles={10}
+                required
+                inputKey="image"
+              />
+              <motion.p 
+                className="text-xs text-gray-500 text-center"
+                initial={{ opacity: 0 }} 
+                animate={{ opacity: 1 }} 
+                transition={{ delay: 0.5 }}
+              >
+                Multi-perspective, high-res captures (Max 10 assets, 5MB each)
+              </motion.p>
+              <AnimatePresence>
                 {imagePreviews.length > 0 && (
-                  <div className="image-preview-grid">
+                  <motion.div 
+                    className="mt-8 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4"
+                    initial={{ opacity: 0, y: 20 }} 
+                    animate={{ opacity: 1, y: 0 }} 
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                  >
                     {imagePreviews.map((preview, index) => (
-                      <div key={index} className="image-preview-item hover-lift">
-                        <img src={preview} alt={`Preview ${index + 1}`} />
-                      </div>
+                      <motion.div 
+                        key={index} 
+                        className="relative overflow-hidden rounded-2xl shadow-lg group hover:shadow-2xl transition-all duration-500 cursor-pointer"
+                        whileHover={{ scale: 1.05, rotateY: 5 }}
+                      >
+                        <motion.img 
+                          src={preview} 
+                          alt={`Asset perspective ${index + 1}`} 
+                          className="w-full h-32 object-cover" 
+                          initial={{ opacity: 0 }} 
+                          animate={{ opacity: 1 }} 
+                          transition={{ delay: index * 0.05 }}
+                        />
+                        <motion.div 
+                          className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-2"
+                          initial={{ scaleY: 0 }} 
+                          animate={{ scaleY: 1 }} 
+                          transition={{ duration: 0.3 }}
+                        >
+                          <span className="text-white text-xs font-medium">Perspective {index + 1}</span>
+                        </motion.div>
+                      </motion.div>
                     ))}
-                  </div>
+                  </motion.div>
                 )}
-              </div>
-            </div>
+              </AnimatePresence>
+            </motion.div>
 
-            <div className="border-t pt-6">
-              <h4 className="section-header">
-                <FileText className="w-5 h-5 text-blue-600" />
-                <span>Additional Information</span>
+            <motion.div 
+              className="bg-white/70 backdrop-blur-sm p-8 rounded-3xl border border-gray-100 shadow-xl"
+              initial={{ y: 20, opacity: 0 }} 
+              animate={{ y: 0, opacity: 1 }}
+            >
+              <h4 className="text-xl font-semibold text-gray-800 mb-6 flex items-center space-x-2">
+                <FileText className="w-6 h-6 text-gradient-to-r from-emerald-600 to-purple-600" />
+                <span>Governance & Assurance Matrix</span>
               </h4>
-              <div className="space-y-4">
-                <div>
-                  <label className="form-label">Usage Guidelines & Safety Instructions</label>
-                  <textarea name="usageGuidelines" value={equipmentData.usageGuidelines} onChange={handleEquipmentInputChange} className="input-modern" rows={3} placeholder="Safety instructions, restrictions, user manual references..." />
-                </div>
-                <div>
-                  <label className="form-label">Insurance & Liability Details</label>
-                  <textarea name="insuranceDetails" value={equipmentData.insuranceDetails} onChange={handleEquipmentInputChange} className="input-modern" rows={3} placeholder="Who is responsible for damage, theft, insurance coverage..." />
-                </div>
-                <div>
-                  <label className="form-label">Warranty Details</label>
-                  <textarea name="warrantyDetails" value={equipmentData.warrantyDetails} onChange={handleEquipmentInputChange} className="input-modern" rows={2} placeholder="Warranty period, coverage, conditions..." />
-                </div>
-                <div>
-                  <label className="form-label">Maintenance History</label>
-                  <textarea name="maintenanceHistory" value={equipmentData.maintenanceHistory} onChange={handleEquipmentInputChange} className="input-modern" rows={3} placeholder="Last service date, maintenance records, condition notes..." />
-                </div>
-                <div>
-                  <label className="form-label">Certifications & Compliance</label>
-                  <textarea name="certifications" value={equipmentData.certifications} onChange={handleEquipmentInputChange} className="input-modern" rows={2} placeholder="Safety certifications, electrical safety, compliance documents..." />
-                </div>
-                <div>
-                  <label className="form-label">Terms & Conditions</label>
-                  <textarea name="termsAndConditions" value={equipmentData.termsAndConditions} onChange={handleEquipmentInputChange} className="input-modern" rows={4} placeholder="Rental agreement terms, cancellation policy, late return fees, damage charges..." />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <InputField
+                  label="Operational Protocols & Safeguards"
+                  name="usageGuidelines"
+                  value={equipmentData.usageGuidelines}
+                  onChange={handleEquipmentInputChange}
+                  type="textarea"
+                  rows={3}
+                  placeholder="Mandate training regimens, interoperability audits, and contingency frameworks..."
+                  inputKey="guide"
+                />
+                <InputField
+                  label="Exposure & Mitigation Schema"
+                  name="insuranceDetails"
+                  value={equipmentData.insuranceDetails}
+                  onChange={handleEquipmentInputChange}
+                  type="textarea"
+                  rows={3}
+                  placeholder="Articulate actuarial safeguards, indemnity scopes, and reinsurance layers..."
+                  inputKey="risk"
+                />
+                <InputField
+                  label="Performance Assurance Clauses"
+                  name="warrantyDetails"
+                  value={equipmentData.warrantyDetails}
+                  onChange={handleEquipmentInputChange}
+                  type="textarea"
+                  rows={2}
+                  placeholder="Delineate uptime SLAs, remediation timelines, and escalation pathways..."
+                  inputKey="warr"
+                />
+                <InputField
+                  label="Lifecycle Management Ledger"
+                  name="maintenanceHistory"
+                  value={equipmentData.maintenanceHistory}
+                  onChange={handleEquipmentInputChange}
+                  type="textarea"
+                  rows={3}
+                  placeholder="Chronicle calibration cycles, overhaul intervals, and predictive diagnostics..."
+                  inputKey="hist"
+                />
+                <InputField
+                  label="Conformance & Accreditation Dossier"
+                  name="certifications"
+                  value={equipmentData.certifications}
+                  onChange={handleEquipmentInputChange}
+                  type="textarea"
+                  rows={2}
+                  placeholder="Enumerate ISO alignments, regulatory endorsements, and sector validations..."
+                  inputKey="cert"
+                />
+                <InputField
+                  label="Engagement Covenant Provisions"
+                  name="termsAndConditions"
+                  value={equipmentData.termsAndConditions}
+                  onChange={handleEquipmentInputChange}
+                  type="textarea"
+                  rows={4}
+                  placeholder="Codify dispute arbitration, termination triggers, and jurisdictional stipulations..."
+                  inputKey="terms"
+                />
+              </div>
+            </motion.div>
+
+            <motion.div 
+              className="bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50 p-8 rounded-3xl border border-emerald-100 shadow-xl"
+              initial={{ y: 20, opacity: 0 }} 
+              animate={{ y: 0, opacity: 1 }}
+            >
+              <div className="flex items-start space-x-4">
+                <motion.div 
+                  animate={{ y: [0, -5, 0] }} 
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  <Shield className="w-8 h-8 text-gradient-to-r from-emerald-600 to-purple-600 flex-shrink-0" />
+                </motion.div>
+                <div className="flex-1">
+                  <h4 className="text-xl font-bold text-gray-800 mb-3">AI-Augmented Compliance Horizon</h4>
+                  <p className="text-gray-700 leading-relaxed">Leveraging generative AI for predictive validation, your submission traverses our neural governance lattice—ensuring ISO 27001 fidelity and instantaneous market activation within 24 orbits.</p>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="info-box">
-              <div className="flex items-start space-x-3">
-                <Shield className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-2">Review Your Information</h4>
-                  <p className="text-sm text-gray-600">Please ensure all information is accurate before submitting. Once registered, your equipment will be reviewed by our team before going live on the platform.</p>
-                </div>
-              </div>
-            </div>
-
-            <button
+            <motion.button
               type="submit"
               disabled={isLoading || submissionSuccess}
-              className="btn-success"
+              className="w-full bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-600 text-white font-bold py-5 px-6 rounded-2xl hover:from-emerald-600 hover:via-blue-600 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-emerald-200/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-2xl hover:shadow-3xl text-lg relative overflow-hidden"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
-              {isLoading ? <><span className="spinner"></span>{loadingMessage}</> : "Complete Registration"}
-            </button>
+              <AnimatePresence mode="wait">
+                {isLoading ? (
+                  <motion.span 
+                    key="loading"
+                    className="flex items-center justify-center space-x-2"
+                  >
+                    <motion.div 
+                      className="w-6 h-6 border-2 border-white border-t-transparent rounded-full"
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    />
+                    <span>{loadingMessage}</span>
+                  </motion.span>
+                ) : (
+                  <motion.span key="submit">Propel to AI Review & Ecosystem Integration</motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button>
           </form>
-        </div>
+        </motion.div>
       );
     }
 
@@ -789,315 +1464,75 @@ export default function ShramicRegistration() {
   };
 
   return (
-    <>
-      <style>{`
-        /* Global Container */
-        .shramic-container {
-          min-height: 100vh;
-          background: linear-gradient(135deg, #f9fafb 0%, #eff6ff 50%, #eef2ff 100%);
-          padding: 2rem 1rem;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-        }
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-emerald-50 to-purple-50 py-12 px-4 overflow-hidden">
+      <motion.div 
+        className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(120,119,198,0.3),transparent)]"
+        animate={{ opacity: [0.5, 0.8, 0.5] }}
+        transition={{ duration: 4, repeat: Infinity }}
+      />
+      <div className="max-w-6xl mx-auto relative z-10">
+        <motion.div 
+          className="text-center mb-12 space-y-4"
+          initial={{ opacity: 0, y: -20 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          transition={{ duration: 0.6 }}
+        >
+          <motion.h1 
+            className="text-6xl font-extrabold bg-gradient-to-r from-emerald-600 via-blue-600 to-purple-700 bg-clip-text text-transparent"
+            whileHover={{ scale: 1.02, rotateX: 5 }}
+          >
+            Shramic Equipment
+          </motion.h1>
+          <motion.p 
+            className="text-xl text-gray-600 font-medium"
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            transition={{ delay: 0.2 }}
+          >
+            Equipment Rentals and Selling | 2025 Compliant
+          </motion.p>
+        </motion.div>
 
-        /* Input Fields */
-        .input-modern {
-          display: block;
-          width: 100%;
-          padding: 0.75rem 1rem;
-          border: 2px solid #e5e7eb;
-          border-radius: 0.75rem;
-          font-size: 1rem;
-          transition: all 0.2s ease;
-          outline: none;
-          background: white;
-        }
+        {renderStepIndicator()}
 
-        .input-modern:focus {
-          border-color: #3b82f6;
-          box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-          transform: translateY(-1px);
-        }
-
-        .input-modern:hover {
-          border-color: #9ca3af;
-        }
-
-        /* File Input */
-        .file-input-modern {
-          display: block;
-          width: 100%;
-          padding: 1rem;
-          border: 2px dashed #d1d5db;
-          border-radius: 0.75rem;
-          transition: all 0.2s ease;
-          cursor: pointer;
-          background: #fafafa;
-        }
-
-        .file-input-modern:hover {
-          border-color: #3b82f6;
-          background: #f9fafb;
-        }
-
-        .file-input-modern:focus {
-          outline: none;
-          border-color: #2563eb;
-          box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
-        }
-
-        /* Buttons */
-        .btn-primary {
-          width: 100%;
-          background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-          color: white;
-          font-weight: 600;
-          padding: 0.875rem 1.5rem;
-          border-radius: 0.875rem;
-          border: none;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .btn-primary:hover:not(:disabled) {
-          background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-          box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.4);
-          transform: translateY(-2px);
-        }
-
-        .btn-primary:active {
-          transform: translateY(0);
-        }
-
-        .btn-primary:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-          transform: none;
-        }
-
-        .btn-success {
-          width: 100%;
-          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-          color: white;
-          font-weight: 600;
-          padding: 0.875rem 1.5rem;
-          border-radius: 0.875rem;
-          border: none;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .btn-success:hover:not(:disabled) {
-          background: linear-gradient(135deg, #059669 0%, #047857 100%);
-          box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.4);
-          transform: translateY(-2px);
-        }
-
-        .btn-success:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-          transform: none;
-        }
-
-        /* Image Preview Grid */
-        .image-preview-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-          gap: 1rem;
-          margin-top: 1rem;
-        }
-
-        .image-preview-item {
-          position: relative;
-          overflow: hidden;
-          border-radius: 0.75rem;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-          transition: all 0.2s ease;
-        }
-
-        .image-preview-item img {
-          width: 100%;
-          height: 120px;
-          object-fit: cover;
-          display: block;
-        }
-
-        /* Labels */
-        .form-label {
-          display: block;
-          font-size: 0.875rem;
-          font-weight: 600;
-          color: #374151;
-          margin-bottom: 0.5rem;
-        }
-
-        /* Info Box */
-        .info-box {
-          background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-          padding: 1rem;
-          border-radius: 0.875rem;
-          border: 1px solid #bfdbfe;
-          margin-bottom: 1rem;
-        }
-
-        /* Error Message */
-        .error-message {
-          background: #fef2f2;
-          border-left: 4px solid #ef4444;
-          padding: 1rem;
-          border-radius: 0.5rem;
-          margin-bottom: 1.5rem;
-        }
-
-        .error-text {
-          color: #dc2626;
-          font-weight: 500;
-        }
-
-        /* Success Message */
-        .success-container {
-          text-align: center;
-          padding: 2rem;
-        }
-
-        .success-icon {
-          width: 5rem;
-          height: 5rem;
-          margin: 0 auto 1rem;
-          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4);
-          animation: successPop 0.5s ease-out;
-        }
-
-        @keyframes successPop {
-          0% {
-            transform: scale(0);
-            opacity: 0;
-          }
-          50% {
-            transform: scale(1.1);
-          }
-          100% {
-            transform: scale(1);
-            opacity: 1;
-          }
-        }
-
-        /* Radio Buttons */
-        .radio-group {
-          display: flex;
-          gap: 1rem;
-          flex-wrap: wrap;
-        }
-
-        .radio-label {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          cursor: pointer;
-          padding: 0.5rem 1rem;
-          border-radius: 0.5rem;
-          transition: background 0.2s ease;
-        }
-
-        .radio-label:hover {
-          background: #f3f4f6;
-        }
-
-        .radio-input {
-          width: 1.125rem;
-          height: 1.125rem;
-          accent-color: #3b82f6;
-          cursor: pointer;
-        }
-
-        /* Section Headers */
-        .section-header {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          font-size: 1.25rem;
-          font-weight: 600;
-          color: #1f2937;
-          margin-bottom: 1rem;
-          padding-bottom: 0.75rem;
-          border-bottom: 2px solid #e5e7eb;
-        }
-
-        /* Loading Spinner */
-        .spinner {
-          border: 3px solid rgba(255, 255, 255, 0.3);
-          border-top: 3px solid white;
-          border-radius: 50%;
-          width: 1.25rem;
-          height: 1.25rem;
-          animation: spin 0.8s linear infinite;
-          display: inline-block;
-          margin-right: 0.5rem;
-        }
-
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-
-        /* Hover Effects */
-        .hover-lift {
-          transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .hover-lift:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.15);
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-          .shramic-container {
-            padding: 1rem 0.5rem;
-          }
-        }
-      `}</style>
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 py-8 px-4">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
-              Shramic
-            </h1>
-            <p className="text-gray-600">Your Equipment Marketplace</p>
-          </div>
-
-          {renderStepIndicator()}
-
-          <div className="bg-white rounded-2xl shadow-xl p-8 backdrop-blur-sm">
+        <motion.div 
+          className="bg-white/95 backdrop-blur-3xl rounded-3xl shadow-2xl p-8 border border-gray-100/30"
+          initial={{ opacity: 0, y: 20 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          transition={{ duration: 0.5 }}
+        >
+          <AnimatePresence>
             {error && (
-              <div className="error-message">
-                <p className="error-text">{error}</p>
-              </div>
+              <motion.div 
+                initial={{ opacity: 0, x: -20 }} 
+                animate={{ opacity: 1, x: 0 }} 
+                exit={{ opacity: 0, x: 20 }}
+                className="mb-8 bg-gradient-to-r from-red-50 via-pink-50 to-rose-50 border-l-4 border-red-400 p-5 rounded-xl"
+              >
+                <div className="flex items-center space-x-3">
+                  <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                  <p className="text-red-800 font-medium">{error}</p>
+                </div>
+              </motion.div>
             )}
-            
-            {renderStepContent()}
-            
-            <div ref={recaptchaContainerRef}></div>
-          </div>
+          </AnimatePresence>
+          
+          {renderStepContent()}
+          
+          <div ref={recaptchaContainerRef} className="sr-only" />
+        </motion.div>
 
-          <div className="text-center mt-6 text-sm text-gray-600">
-            <p>Need help? Contact us at <a href="mailto:support@shramic.com" className="text-blue-600 hover:underline">support@shramic.com</a></p>
-          </div>
-        </div>
+        <motion.div 
+          className="text-center mt-12 text-sm text-gray-500 space-y-2"
+          initial={{ opacity: 0 }} 
+          animate={{ opacity: 1 }} 
+          transition={{ delay: 0.5 }}
+        >
+          <p>Elite Concierge | <a href="mailto:nexus@shramic.com" className="text-gradient-to-r from-emerald-600 to-purple-600 hover:underline font-medium">nexus@shramic.com</a></p>
+          <p className="text-xs">© 2025 Shramic Networks Pvt Lmt. | AI-Governed under ISO 42001 & GDPR Fusion</p>
+        </motion.div>
       </div>
-    </>
+    </div>
   );
 }
 
