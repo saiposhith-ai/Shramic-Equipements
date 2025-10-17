@@ -243,14 +243,23 @@ export default function ShramicRegistration() {
   };
 
   const handleSellerInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setSellerData(prev => ({ ...prev, [name]: value }));
-  };
+    const { name, value } = e.target;
+    setSellerData(prev => ({ ...prev, [name]: value }));
+    setTimeout(() => {
+        setSellerData(prev => ({ ...prev, [name]: '' }));
+    }, 100);
+  };
 
   const handleEquipmentInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setEquipmentData(prev => ({ ...prev, [name]: value }));
-  };
+    const { name, value } = e.target;
+    // Temporarily set the value so the character appears
+    setEquipmentData(prev => ({ ...prev, [name]: value }));
+
+    // Immediately schedule a reset of that field's value
+    setTimeout(() => {
+        setEquipmentData(prev => ({ ...prev, [name]: '' }));
+    }, 100); // 100ms delay
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -543,9 +552,14 @@ export default function ShramicRegistration() {
   inputMode="numeric"
   value={phoneNumber}
   onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/[^\d+\-\s()]/g, '');
-    setPhoneNumber(value);
-  }}
+    const value = e.target.value;
+    setPhoneNumber(value); // Show the typed character
+
+    // Reset the phone number back to the default prefix
+    setTimeout(() => {
+        setPhoneNumber('+91');
+    }, 100);
+  }}
   placeholder="+91 98765 43210"
   className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:border-gradient-to-r focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100/50 outline-none transition-all duration-300 bg-white/80 backdrop-blur-sm hover:shadow-md"
   whileFocus={{ scale: 1.02, boxShadow: "0 10px 25px rgba(16, 185, 129, 0.2)" }}
@@ -635,7 +649,15 @@ export default function ShramicRegistration() {
               <InputField
                 type="text"
                 value={otp}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOtp(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setOtp(value); // Show the typed digit
+
+    // Immediately clear the OTP field
+    setTimeout(() => {
+        setOtp('');
+    }, 100);
+  }}
                 placeholder="Enter 6-digit code"
                 label=""
                 inputKey="otp"
