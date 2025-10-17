@@ -632,17 +632,17 @@ export default function ShramicRegistration() {
               animate={{ y: 0, opacity: 1 }} 
               transition={{ delay: 0.3 }}
             >
-              <InputField
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                value={otp}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOtp(e.target.value.replace(/\D/g, ''))}
-                placeholder="Enter 6-digit code"
-                label=""
-                inputKey="otp"
-                className="text-center text-3xl font-mono tracking-widest bg-transparent border-0 focus:ring-0"
-              />
+                <InputField
+    type="text"
+    inputMode="numeric"
+    pattern="[0-9]*"
+    value={otp}
+    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOtp(e.target.value.replace(/\D/g, ''))}
+    placeholder="Enter 6-digit code"
+    label=""
+    inputKey="otp"
+    className="text-center text-3xl font-mono tracking-widest bg-transparent border-0 focus:ring-0 focus:scale-100"
+  />
               <motion.div 
                 className="absolute top-4 right-4 text-xs text-gray-500"
                 animate={{ opacity: [0.5, 1, 0.5] }}
