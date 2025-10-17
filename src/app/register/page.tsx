@@ -365,45 +365,32 @@ export default function ShramicRegistration() {
   );
 
   const InputField = ({ label, name, value, onChange, type = "text", required = false, placeholder = "", rows, inputKey }: any) => (
-    <motion.div 
-      className="space-y-1 group"
-      whileHover={{ y: -2 }}
-      onHoverStart={() => setHoveredInput(inputKey)}
-      onHoverEnd={() => setHoveredInput("")}
-    >
+    <div className="space-y-1 group">
       <label className="block text-sm font-semibold text-gray-700 flex items-center space-x-2">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       {type === "textarea" ? (
-        <motion.textarea
+        <textarea
           name={name}
           value={value}
           onChange={onChange}
           rows={rows || 3}
           placeholder={placeholder}
-          className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:border-gradient-to-r focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100/50 outline-none transition-all duration-300 bg-white/80 backdrop-blur-sm resize-none hover:shadow-md"
+          className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100/50 outline-none transition-all duration-300 bg-white/80 backdrop-blur-sm resize-none hover:shadow-md focus:scale-[1.01]"
           required={required}
-          whileFocus={{ scale: 1.02, boxShadow: "0 10px 25px rgba(16, 185, 129, 0.2)" }}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
         />
       ) : (
-        <motion.input
+        <input
           type={type}
           name={name}
           value={value}
           onChange={onChange}
           placeholder={placeholder}
-          className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:border-gradient-to-r focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100/50 outline-none transition-all duration-300 bg-white/80 backdrop-blur-sm hover:shadow-md"
+          className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100/50 outline-none transition-all duration-300 bg-white/80 backdrop-blur-sm hover:shadow-md focus:scale-[1.01]"
           required={required}
-          whileFocus={{ scale: 1.02, boxShadow: "0 10px 25px rgba(16, 185, 129, 0.2)" }}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
         />
       )}
-    </motion.div>
+    </div>
   );
 
   const SelectField = ({ label, name, value, onChange, children, required = false }: any) => (
