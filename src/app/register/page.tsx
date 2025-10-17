@@ -364,7 +364,7 @@ export default function ShramicRegistration() {
     </motion.div>
   );
 
-  const InputField = ({ label, name, value, onChange, type = "text", required = false, placeholder = "", rows, inputKey }: any) => (
+  const InputField = ({ label, name, value, onChange, type = "text", required = false, placeholder = "", rows, inputKey, className = "" }: any) => (
     <div className="space-y-1 group">
       <label className="block text-sm font-semibold text-gray-700 flex items-center space-x-2">
         {label} {required && <span className="text-red-500">*</span>}
@@ -376,7 +376,7 @@ export default function ShramicRegistration() {
           onChange={onChange}
           rows={rows || 3}
           placeholder={placeholder}
-          className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100/50 outline-none transition-all duration-300 bg-white/80 backdrop-blur-sm resize-none hover:shadow-md focus:scale-[1.01]"
+          className={`w-full px-4 py-3 border border-gray-200 rounded-2xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100/50 outline-none transition-all duration-300 bg-white/80 backdrop-blur-sm resize-none hover:shadow-md ${className}`}
           required={required}
         />
       ) : (
@@ -386,7 +386,7 @@ export default function ShramicRegistration() {
           value={value}
           onChange={onChange}
           placeholder={placeholder}
-          className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100/50 outline-none transition-all duration-300 bg-white/80 backdrop-blur-sm hover:shadow-md focus:scale-[1.01]"
+          className={`w-full px-4 py-3 border border-gray-200 rounded-2xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100/50 outline-none transition-all duration-300 bg-white/80 backdrop-blur-sm hover:shadow-md ${className}`}
           required={required}
         />
       )}
@@ -547,8 +547,8 @@ export default function ShramicRegistration() {
     setPhoneNumber(value);
   }}
   placeholder="+91 98765 43210"
-  className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:border-gradient-to-r focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100/50 outline-none transition-all duration-300 bg-white/80 backdrop-blur-sm hover:shadow-md"
-  whileFocus={{ scale: 1.02, boxShadow: "0 10px 25px rgba(16, 185, 129, 0.2)" }}
+  className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100/50 outline-none transition-all duration-300 bg-white/80 backdrop-blur-sm hover:shadow-md"
+  whileFocus={{ boxShadow: "0 10px 25px rgba(16, 185, 129, 0.2)" }}
   initial={{ opacity: 0, y: 10 }}
   animate={{ opacity: 1, y: 0 }}
   transition={{ duration: 0.3, delay: 0.1 }}
@@ -634,8 +634,10 @@ export default function ShramicRegistration() {
             >
               <InputField
                 type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={otp}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOtp(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOtp(e.target.value.replace(/\D/g, ''))}
                 placeholder="Enter 6-digit code"
                 label=""
                 inputKey="otp"
