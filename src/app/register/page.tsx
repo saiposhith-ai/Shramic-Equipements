@@ -1,4 +1,5 @@
 "use client";
+import 'css/shramic-registration.css';
 
 import { useState, useEffect, useRef } from "react";
 import { initializeApp, getApps, getApp } from "firebase/app";
