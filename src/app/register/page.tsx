@@ -76,9 +76,10 @@ export default function RegisterEquipmentPage() {
 useEffect(() => {
   if (recaptchaContainerRef.current && !window.recaptchaVerifier) {
     try {
-      // Create invisible reCAPTCHA
+      // Create invisible reCAPTCHA - note the correct parameter order
       window.recaptchaVerifier = new RecaptchaVerifier(
-        recaptchaContainerRef.current,
+        auth, // auth comes first
+        recaptchaContainerRef.current, // then the container element
         {
           size: 'invisible',
           callback: () => console.log("reCAPTCHA verified"),
@@ -86,8 +87,7 @@ useEffect(() => {
             console.log("reCAPTCHA expired, re-rendering");
             window.recaptchaVerifier?.render().catch(err => console.error(err));
           }
-        },
-        auth
+        }
       );
 
       // Explicitly render reCAPTCHA and get widgetId
@@ -144,9 +144,9 @@ useEffect(() => {
           window.recaptchaVerifier.clear();
         }
         window.recaptchaVerifier = new RecaptchaVerifier(
-          recaptchaContainerRef.current,
-          { size: 'invisible' },
-          auth
+          auth, // auth first
+          recaptchaContainerRef.current, // then container
+          { size: 'invisible' } // then options
         );
         await window.recaptchaVerifier.render();
         setError("Please try sending the code again.");
