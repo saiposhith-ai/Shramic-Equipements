@@ -124,8 +124,17 @@ const SelectField = memo(({ label, name, value, onChange, children, required = f
 const FileInput = memo(({ label, onChange, accept, multiple = true, maxFiles, required = false }: any) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('File input changed:', e.target.files?.length, 'files');
+    if (onChange) {
+      onChange(e);
+    }
   };
 
   return (
@@ -142,7 +151,7 @@ const FileInput = memo(({ label, onChange, accept, multiple = true, maxFiles, re
           type="file"
           multiple={multiple}
           accept={accept}
-          onChange={onChange}
+          onChange={handleFileChange}
           className="hidden"
           required={required}
         />
