@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect, useRef, memo } from "react"; // Import memo
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult, User } from "firebase/auth";
@@ -7,7 +6,6 @@ import { getFirestore, collection, addDoc } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Camera, Upload, CheckCircle, User as UserIcon, Package, FileText, Shield, Phone, Mail, MapPin, Building, CreditCard, File, AlertCircle, Zap, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-
 // Firebase config (remains the same)
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ,
@@ -18,12 +16,10 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ,
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
-
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
-
 // Interfaces (remain the same)
 interface SellerData {
   sellerType: "individual" | "company";
@@ -46,7 +42,6 @@ interface SellerData {
   damagePolicy: string;
   insurancePolicy: string;
 }
-
 interface EquipmentData {
   title: string;
   category: string;
@@ -74,7 +69,6 @@ interface EquipmentData {
   leadTime: string;
   termsAndConditions: string;
 }
-
 // FIX 1: Wrap functional components with React.memo for performance optimization
 const InputField = memo(({ label, name, value, onChange, type = "text", required = false, placeholder = "", rows, className = "" }: any) => (
   <div className="space-y-1 group">
@@ -104,7 +98,6 @@ const InputField = memo(({ label, name, value, onChange, type = "text", required
     )}
   </div>
 ));
-
 const SelectField = memo(({ label, name, value, onChange, children, required = false }: any) => (
   <motion.div className="space-y-1 group" whileHover={{ y: -2 }}>
     <label className="block text-sm font-semibold text-gray-700">{label} {required && <span className="text-red-500">*</span>}</label>
@@ -120,21 +113,18 @@ const SelectField = memo(({ label, name, value, onChange, children, required = f
     </motion.select>
   </motion.div>
 ));
-
 const FileInput = memo(({ label, onChange, accept, multiple = true, maxFiles, required = false }: any) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+ 
   const handleClick = () => {
     fileInputRef.current?.click();
   };
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     console.log('File input changed:', e.target.files?.length, 'files');
     if (onChange) {
       onChange(e);
     }
   };
-
   return (
     <div className="space-y-2 group">
       <label className="block text-sm font-semibold text-gray-700 flex items-center space-x-2">
@@ -211,8 +201,6 @@ const RadioGroup = memo(({ name, value, onChange, options, title }: any) => (
         </div>
     </div>
 ));
-
-
 export default function ShramicRegistration() {
   const [step, setStep] = useState(1);
   const [phoneNumber, setPhoneNumber] = useState("+91");
@@ -226,8 +214,8 @@ export default function ShramicRegistration() {
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [documentFiles, setDocumentFiles] = useState<File[]>([]);
+  const [documentNames, setDocumentNames] = useState<string[]>([]);
   const recaptchaContainerRef = useRef<HTMLDivElement | null>(null);
-
   const [sellerData, setSellerData] = useState<SellerData>({
     sellerType: "individual",
     sellerName: "",
@@ -249,7 +237,6 @@ export default function ShramicRegistration() {
     damagePolicy: "",
     insurancePolicy: ""
   });
-
   const [equipmentData, setEquipmentData] = useState<EquipmentData>({
     title: "",
     category: "",
@@ -277,11 +264,10 @@ export default function ShramicRegistration() {
     leadTime: "",
     termsAndConditions: ""
   });
-  
+ 
   // All hooks and handlers from your original code remain here...
   // ... (useEffect, handleSendOtp, handleVerifyOtp, etc.)
   // No changes are needed in the logic, only in the JSX rendering.
-
   useEffect(() => {
     if (recaptchaContainerRef.current && !window.recaptchaVerifier) {
       try {
@@ -311,25 +297,21 @@ export default function ShramicRegistration() {
       }
     };
   }, [auth]);
-
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
     setLoadingMessage("Sending verification code...");
-
     if (!window.recaptchaVerifier) {
       setError("reCAPTCHA not initialized. Please refresh the page.");
       setIsLoading(false);
       return;
     }
-
     try {
       let cleanedNumber = phoneNumber.replace(/[\s\-()]/g, '');
       if (!cleanedNumber.startsWith('+')) {
         cleanedNumber = cleanedNumber.length === 10 ? `+91${cleanedNumber}` : `+${cleanedNumber}`;
       }
-
       const result = await signInWithPhoneNumber(auth, cleanedNumber, window.recaptchaVerifier);
       setConfirmationResult(result);
       setStep(2);
@@ -357,20 +339,17 @@ export default function ShramicRegistration() {
       setIsLoading(false);
     }
   };
-
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoadingMessage("Verifying...");
     setIsLoading(true);
-
     if (!confirmationResult) {
       setError("Verification session expired. Please request a new code.");
       setIsLoading(false);
       setStep(1);
       return;
     }
-
     try {
       const result = await confirmationResult.confirm(otp);
       setUser(result.user);
@@ -383,17 +362,14 @@ export default function ShramicRegistration() {
       setIsLoading(false);
     }
   };
-
   const handleSellerInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setSellerData(prev => ({ ...prev, [name]: value }));
   };
-
   const handleEquipmentInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setEquipmentData(prev => ({ ...prev, [name]: value }));
   };
-
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
@@ -404,14 +380,18 @@ export default function ShramicRegistration() {
       setImagePreviews(newPreviews);
     }
   };
-
   const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
-      setDocumentFiles(files.slice(0, 5));
+      console.log('Document files selected:', files.length, 'files');
+      files.forEach((file, index) => {
+        console.log(`File ${index + 1}:`, file.name, file.size, file.type);
+      });
+      const limitedFiles = files.slice(0, 5);
+      setDocumentFiles(limitedFiles);
+      setDocumentNames(limitedFiles.map(f => f.name));
     }
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
@@ -421,7 +401,6 @@ export default function ShramicRegistration() {
     setError("");
     setLoadingMessage("Uploading images...");
     setIsLoading(true);
-
     try {
       const imageUrls: string[] = [];
       for (const file of imageFiles) {
@@ -430,7 +409,6 @@ export default function ShramicRegistration() {
         const downloadURL = await getDownloadURL(snapshot.ref);
         imageUrls.push(downloadURL);
       }
-
       setLoadingMessage("Uploading documents...");
       const documentUrls: string[] = [];
       for (const file of documentFiles) {
@@ -439,7 +417,6 @@ export default function ShramicRegistration() {
         const downloadURL = await getDownloadURL(snapshot.ref);
         documentUrls.push(downloadURL);
       }
-
       setLoadingMessage("Finalizing registration...");
       await addDoc(collection(db, "equipments"), {
         ...sellerData,
@@ -456,7 +433,6 @@ export default function ShramicRegistration() {
         deliveryFee: equipmentData.deliveryFee ? parseFloat(equipmentData.deliveryFee) : null,
         createdAt: new Date(),
       });
-
       setSubmissionSuccess(true);
       setTimeout(() => { window.location.href = "/dashboard"; }, 3000);
     } catch (err: any) {
@@ -465,7 +441,6 @@ export default function ShramicRegistration() {
       setIsLoading(false);
     }
   };
-
   const renderStepIndicator = () => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -504,7 +479,6 @@ export default function ShramicRegistration() {
       </div>
     </motion.div>
   );
-
   const renderStepContent = () => {
     if (step === 1) {
       return (
@@ -606,7 +580,6 @@ export default function ShramicRegistration() {
         </motion.div>
       );
     }
-
     if (step === 2) {
       return (
         <motion.div
@@ -701,7 +674,6 @@ export default function ShramicRegistration() {
         </motion.div>
       );
     }
-
     if (step === 3) {
       return (
         <motion.div
@@ -740,7 +712,7 @@ export default function ShramicRegistration() {
                 title="Business Structure"
               />
             </motion.div>
-            
+           
             {/* FIX 4: Added key props to all InputField components */}
             <motion.div
               className="grid grid-cols-1 md:grid-cols-2 gap-6"
@@ -797,7 +769,6 @@ export default function ShramicRegistration() {
                 onChange={handleSellerInputChange}
               />
             </motion.div>
-
             <InputField
               key="address"
               label="Headquarters Address"
@@ -806,7 +777,6 @@ export default function ShramicRegistration() {
               onChange={handleSellerInputChange}
               required
             />
-
             <motion.div
               className="grid grid-cols-1 md:grid-cols-3 gap-6"
               initial="hidden"
@@ -842,7 +812,6 @@ export default function ShramicRegistration() {
                 required
               />
             </motion.div>
-
             {sellerData.sellerType === "company" && (
               <motion.div
                 className="grid grid-cols-1 md:grid-cols-2 gap-6"
@@ -866,7 +835,6 @@ export default function ShramicRegistration() {
                 />
               </motion.div>
             )}
-
             <motion.div
               className="bg-white/70 backdrop-blur-sm p-8 rounded-3xl border border-gray-100 shadow-xl"
               initial={{ y: 20, opacity: 0 }}
@@ -912,7 +880,6 @@ export default function ShramicRegistration() {
                 </SelectField>
               </div>
             </motion.div>
-
             <motion.div
               className="bg-white/70 backdrop-blur-sm p-8 rounded-3xl border border-gray-100 shadow-xl"
               initial={{ y: 20, opacity: 0 }}
@@ -952,7 +919,6 @@ export default function ShramicRegistration() {
                 />
               </div>
             </motion.div>
-
             <FileInput
               key="documentFiles"
               label="Compliance Documentation Upload"
@@ -960,6 +926,45 @@ export default function ShramicRegistration() {
               accept=".pdf,.jpg,.jpeg,.png"
               maxFiles={5}
             />
+            <AnimatePresence>
+              {documentNames.length > 0 && (
+                <motion.div
+                  className="mt-6 p-4 bg-gradient-to-br from-emerald-50/50 to-blue-50/50 rounded-2xl border border-emerald-100/50 backdrop-blur-sm overflow-hidden"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-semibold text-gray-700 flex items-center space-x-2">
+                      <FileText className="w-4 h-4 text-emerald-600" />
+                      <span>{documentNames.length} Document{documentNames.length > 1 ? 's' : ''} Uploaded</span>
+                    </h4>
+                    <CheckCircle className="w-5 h-5 text-emerald-500 animate-pulse" />
+                  </div>
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {documentNames.map((name, index) => (
+                      <motion.div
+                        key={`${name}-${index}`}
+                        className="flex items-center space-x-3 p-3 bg-white/80 rounded-xl hover:bg-white hover:shadow-md hover:border-emerald-200 border border-gray-100/50 transition-all duration-300 group cursor-pointer overflow-hidden"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        whileHover={{ x: 4, backgroundColor: "rgba(255,255,255,1)" }}
+                        transition={{ delay: index * 0.05, type: "spring", stiffness: 300 }}
+                      >
+                        <div className="p-2 bg-gradient-to-br from-emerald-100 to-blue-100 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                          <FileText className="w-4 h-4 text-gray-600 group-hover:text-emerald-600" />
+                        </div>
+                        <span className="flex-1 text-sm font-medium text-gray-700 truncate pr-2" title={name}>
+                          {name.length > 30 ? `${name.substring(0, 27)}...` : name}
+                        </span>
+                        <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                      </motion.div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
             <motion.p
               className="text-xs text-gray-500 text-center"
               initial={{ opacity: 0 }}
@@ -968,7 +973,6 @@ export default function ShramicRegistration() {
             >
               Regulatory filings, executive IDs, fiscal proofs (Max 5 files, 10MB each)
             </motion.p>
-
             <motion.button
               type="submit"
               className="w-full bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-600 text-white font-semibold py-4 px-6 rounded-2xl hover:from-emerald-600 hover:via-blue-600 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-emerald-200/50 transition-all duration-300 shadow-xl hover:shadow-2xl"
@@ -981,7 +985,7 @@ export default function ShramicRegistration() {
         </motion.div>
       );
     }
-    
+   
     // Step 4 rendering and the rest of the component remains the same...
     if (step === 4) {
         if (submissionSuccess) {
@@ -1038,7 +1042,6 @@ export default function ShramicRegistration() {
                 </motion.div>
             );
         }
-
         return (
             <motion.div
                 key="step4"
@@ -1128,7 +1131,6 @@ export default function ShramicRegistration() {
                             <option value="Refurbished">Revitalized - Warranted</option>
                         </SelectField>
                     </motion.div>
-
                     <InputField
                         key="description"
                         label="Comprehensive Asset Narrative"
@@ -1140,7 +1142,6 @@ export default function ShramicRegistration() {
                         placeholder="Elucidate capabilities, synergies, and ROI propositions for discerning procurement teams..."
                         required
                     />
-
                     <InputField
                         key="specifications"
                         label="Engineering Parameters"
@@ -1151,7 +1152,6 @@ export default function ShramicRegistration() {
                         rows={4}
                         placeholder="Delineate tolerances, throughput, interoperability, and scalability metrics..."
                     />
-
                     <motion.div
                         className="bg-white/70 backdrop-blur-sm p-8 rounded-3xl border border-gray-100 shadow-xl"
                         initial={{ y: 20, opacity: 0 }}
@@ -1234,7 +1234,6 @@ export default function ShramicRegistration() {
                             </motion.div>
                         )}
                     </motion.div>
-
                     <motion.div
                         className="bg-white/70 backdrop-blur-sm p-8 rounded-3xl border border-gray-100 shadow-xl"
                         initial={{ y: 20, opacity: 0 }}
@@ -1292,7 +1291,6 @@ export default function ShramicRegistration() {
                             />
                         </div>
                     </motion.div>
-
                     <motion.div
                         className="bg-white/70 backdrop-blur-sm p-8 rounded-3xl border border-gray-100 shadow-xl"
                         initial={{ y: 20, opacity: 0 }}
@@ -1355,7 +1353,6 @@ export default function ShramicRegistration() {
                             )}
                         </AnimatePresence>
                     </motion.div>
-
                     <motion.div
                         className="bg-white/70 backdrop-blur-sm p-8 rounded-3xl border border-gray-100 shadow-xl"
                         initial={{ y: 20, opacity: 0 }}
@@ -1428,7 +1425,6 @@ export default function ShramicRegistration() {
                             />
                         </div>
                     </motion.div>
-
                     <motion.div
                         className="bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50 p-8 rounded-3xl border border-emerald-100 shadow-xl"
                         initial={{ y: 20, opacity: 0 }}
@@ -1447,7 +1443,6 @@ export default function ShramicRegistration() {
                             </div>
                         </div>
                     </motion.div>
-
                     <motion.button
                         type="submit"
                         disabled={isLoading || submissionSuccess}
@@ -1479,7 +1474,7 @@ export default function ShramicRegistration() {
     }
     return null;
   };
-  
+ 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-emerald-50 to-purple-50 py-12 px-4 overflow-hidden">
       <motion.div
@@ -1509,9 +1504,7 @@ export default function ShramicRegistration() {
             Equipment Rentals and Selling | 2025 Compliant
           </motion.p>
         </motion.div>
-
         {renderStepIndicator()}
-
         <motion.div
           className="bg-white/95 backdrop-blur-3xl rounded-3xl shadow-2xl p-8 border border-gray-100/30"
           initial={{ opacity: 0, y: 20 }}
@@ -1533,14 +1526,13 @@ export default function ShramicRegistration() {
               </motion.div>
             )}
           </AnimatePresence>
-          
+         
           <AnimatePresence mode="wait">
             {renderStepContent()}
           </AnimatePresence>
-          
+         
           <div ref={recaptchaContainerRef} className="sr-only" />
         </motion.div>
-
         <motion.div
           className="text-center mt-12 text-sm text-gray-500 space-y-2"
           initial={{ opacity: 0 }}
@@ -1554,7 +1546,6 @@ export default function ShramicRegistration() {
     </div>
   );
 }
-
 declare global {
   interface Window {
     recaptchaVerifier?: RecaptchaVerifier;
