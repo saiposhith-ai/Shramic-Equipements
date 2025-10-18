@@ -121,44 +121,44 @@ const SelectField = memo(({ label, name, value, onChange, children, required = f
   </motion.div>
 ));
 
-const FileInput = memo(({ label, onChange, accept, multiple = true, maxFiles, required = false }: any) => (
-  <motion.div className="space-y-2 group" whileHover={{ scale: 1.02 }}>
-    <label className="block text-sm font-semibold text-gray-700 flex items-center space-x-2">
-      {label} {required && <span className="text-red-500">*</span>}
-    </label>
-    <motion.div
-      className="relative bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-dashed border-gray-300 rounded-2xl p-8 hover:border-emerald-400 transition-all duration-300 cursor-pointer overflow-hidden"
-      whileHover={{ borderColor: "#10B981", backgroundColor: "rgba(16, 185, 129, 0.05)" }}
-    >
-      <motion.div
-        className="absolute inset-0 bg-gradient-to-br from-emerald-500/0 via-purple-500/0 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-      />
-      <input
-        type="file"
-        multiple={multiple}
-        accept={accept}
-        onChange={onChange}
-        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-        required={required}
-      />
-      <div className="text-center flex flex-col items-center space-y-3 relative z-10">
-        <motion.div
-          className="p-3 bg-white rounded-full shadow-lg"
-        >
-          <Upload className="w-6 h-6 text-gray-400 group-hover:text-emerald-500 transition-colors duration-300" />
-        </motion.div>
-        <motion.p
-          className="text-sm text-gray-600 group-hover:text-gray-800 font-medium"
-          whileHover={{ scale: 1.05 }}
-        >
-          Click or drag to upload
-        </motion.p>
-        {maxFiles && <p className="text-xs text-gray-400">Max {maxFiles} files</p>}
-      </div>
-    </motion.div>
-  </motion.div>
-));
+const FileInput = memo(({ label, onChange, accept, multiple = true, maxFiles, required = false }: any) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const handleClick = () => {
+    fileInputRef.current?.click();
+  };
 
+  return (
+    <div className="space-y-2 group">
+      <label className="block text-sm font-semibold text-gray-700 flex items-center space-x-2">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      <div
+        onClick={handleClick}
+        className="relative bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-dashed border-gray-300 rounded-2xl p-8 hover:border-emerald-400 transition-all duration-300 cursor-pointer overflow-hidden group-hover:shadow-lg"
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple={multiple}
+          accept={accept}
+          onChange={onChange}
+          className="hidden"
+          required={required}
+        />
+        <div className="text-center flex flex-col items-center space-y-3 pointer-events-none">
+          <div className="p-3 bg-white rounded-full shadow-lg">
+            <Upload className="w-6 h-6 text-gray-400 group-hover:text-emerald-500 transition-colors duration-300" />
+          </div>
+          <p className="text-sm text-gray-600 group-hover:text-gray-800 font-medium">
+            Click or drag to upload
+          </p>
+          {maxFiles && <p className="text-xs text-gray-400">Max {maxFiles} files</p>}
+        </div>
+      </div>
+    </div>
+  );
+});
 const RadioGroup = memo(({ name, value, onChange, options, title }: any) => (
     <div className="space-y-3">
         <h4 className="text-lg font-semibold text-gray-800 flex items-center space-x-2">
