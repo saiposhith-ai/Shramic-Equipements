@@ -71,14 +71,21 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [ownerData, setOwnerData] = useState<OwnerData | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
+  const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) {
-      router.push("/login");
-      return;
-    }
-    fetchDashboardData();
-  }, [user]);
+    // Wait for auth state to load
+    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+      if (!currentUser) {
+        router.push("/login");
+      } else {
+        fetchDashboardData();
+      }
+      setAuthLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const fetchDashboardData = async () => {
     try {
@@ -188,7 +195,7 @@ const Dashboard = () => {
     }
   };
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center">
         <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }}>
