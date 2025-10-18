@@ -110,18 +110,22 @@ export default function LoginPage() {
       const status = data.status || "under_review";
       const email = data.email || "";
 
-      setUserEmail(email);
-      setUserStatus(status as "approved" | "under_review");
+      console.log("User status:", status, "Email:", email);
 
       if (status === "approved") {
-        router.push("/dashboard");
+        setIsLoading(false);
+        // Use window.location for guaranteed redirect
+        window.location.href = "/dashboard";
       } else {
+        setUserEmail(email);
+        setUserStatus(status as "approved" | "under_review");
         setStep(3);
+        setIsLoading(false);
       }
     } catch (err: any) {
+      console.error("Status check error:", err);
       setError("Failed to check account status. Please try again.");
       setStep(1);
-    } finally {
       setIsLoading(false);
     }
   };
