@@ -947,16 +947,6 @@ export default function ShramicRegistration() {
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none"
                   />
                 </div>
-                   <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Security Deposit (₹)</label>
-                  <input
-                    type="number"
-                    name="securityDeposit"
-                    value={formData.securityDeposit}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none"
-                  />
-                </div>
                 <label className="flex items-center space-x-2">
                   <input
                     type="checkbox"
