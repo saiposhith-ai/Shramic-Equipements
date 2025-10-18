@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth, signOut } from "firebase/auth";
-import { getFirestore, collection, query, where, getDocs, doc, getDoc, updateDoc } from "firebase/firestore";
+import { getAuth, signOut, onAuthStateChanged } from "firebase/auth";
+import { getFirestore, collection, query, where, getDocs, doc, updateDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
-  LogOut, Menu, X, Settings, Bell, MessageSquare, TrendingUp, AlertCircle,
-  Wrench, Calendar, DollarSign, Package, Zap, TrendingDown, Clock,
-  CheckCircle, XCircle, Eye, EyeOff
+  LogOut, Menu, X, Settings, Bell, MessageSquare, TrendingUp,
+  Wrench, Calendar, DollarSign, Package, Zap,
+  CheckCircle
 } from "lucide-react";
 
 const firebaseConfig = {
@@ -58,11 +58,9 @@ interface Earnings {
 const Dashboard = () => {
   const router = useRouter();
   
-  // Initialize Firebase
   const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
   const auth = getAuth(app);
   const db = getFirestore(app);
-  const user = auth.currentUser;
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [equipmentList, setEquipmentList] = useState<Equipment[]>([]);
@@ -71,31 +69,42 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [ownerData, setOwnerData] = useState<OwnerData | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
-  const [authLoading, setAuthLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {
-    // Wait for auth state to load
-    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
-      if (!currentUser) {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
         router.push("/login");
       } else {
-        fetchDashboardData();
+        setCurrentUser(user);
+        await fetchDashboardData(user);
       }
-      setAuthLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (user: any) => {
     try {
       setLoading(true);
-      if (!user?.phoneNumber) return;
+      
+      if (!user?.phoneNumber && !user?.email) {
+        console.error("No user identifier found");
+        setLoading(false);
+        return;
+      }
 
-      // Fetch equipment list
+      // Fetch equipment list - try both phoneNumber and email
       const equipmentRef = collection(db, "equipments");
-      const equipmentQuery = query(equipmentRef, where("ownerPhoneNumber", "==", user.phoneNumber));
-      const equipmentSnapshot = await getDocs(equipmentQuery);
+      let equipmentQuery;
+      
+      if (user.phoneNumber) {
+        equipmentQuery = query(equipmentRef, where("ownerPhoneNumber", "==", user.phoneNumber));
+      } else if (user.email) {
+        equipmentQuery = query(equipmentRef, where("email", "==", user.email));
+      }
+
+      const equipmentSnapshot = await getDocs(equipmentQuery!);
 
       const equipment: Equipment[] = equipmentSnapshot.docs.map(doc => ({
         id: doc.id,
@@ -108,24 +117,36 @@ const Dashboard = () => {
       if (equipmentSnapshot.docs.length > 0) {
         const firstEquipmentData = equipmentSnapshot.docs[0].data();
         setOwnerData({
-          name: firstEquipmentData.ownerName,
-          email: firstEquipmentData.email,
+          name: firstEquipmentData.ownerName || user.displayName || "Owner",
+          email: firstEquipmentData.email || user.email || "",
           company: firstEquipmentData.companyName || "Individual Owner"
+        });
+      } else {
+        // Set default owner data if no equipment found
+        setOwnerData({
+          name: user.displayName || "Owner",
+          email: user.email || "",
+          company: "Individual Owner"
         });
       }
 
       // Fetch bookings for all equipment
-      const bookingsRef = collection(db, "bookings");
-      let allBookings: Booking[] = [];
-      for (const equip of equipment) {
-        const bookingQuery = query(bookingsRef, where("equipmentId", "==", equip.id));
-        const bookingSnapshot = await getDocs(bookingQuery);
-        allBookings = [...allBookings, ...bookingSnapshot.docs.map(doc => ({ bookingId: doc.id, ...doc.data() } as Booking))];
+      if (equipment.length > 0) {
+        const bookingsRef = collection(db, "bookings");
+        let allBookings: Booking[] = [];
+        
+        for (const equip of equipment) {
+          const bookingQuery = query(bookingsRef, where("equipmentId", "==", equip.id));
+          const bookingSnapshot = await getDocs(bookingQuery);
+          allBookings = [...allBookings, ...bookingSnapshot.docs.map(doc => ({ 
+            bookingId: doc.id, 
+            ...doc.data() 
+          } as Booking))];
+        }
+        
+        setBookings(allBookings);
+        calculateEarnings(allBookings);
       }
-      setBookings(allBookings);
-
-      // Calculate earnings
-      calculateEarnings(allBookings);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
     } finally {
@@ -160,7 +181,12 @@ const Dashboard = () => {
       }
     });
 
-    setEarnings({ today: todayEarnings, month: monthEarnings, lifetime: lifetimeEarnings, pending: pendingPayouts });
+    setEarnings({ 
+      today: todayEarnings, 
+      month: monthEarnings, 
+      lifetime: lifetimeEarnings, 
+      pending: pendingPayouts 
+    });
   };
 
   const equipmentStats = {
@@ -180,7 +206,9 @@ const Dashboard = () => {
     try {
       const equipmentRef = doc(db, "equipments", equipmentId);
       await updateDoc(equipmentRef, { currentStatus: newStatus });
-      setEquipmentList(equipmentList.map(e => e.id === equipmentId ? { ...e, currentStatus: newStatus } : e));
+      setEquipmentList(equipmentList.map(e => 
+        e.id === equipmentId ? { ...e, currentStatus: newStatus } : e
+      ));
     } catch (error) {
       console.error("Error updating equipment status:", error);
     }
@@ -195,9 +223,9 @@ const Dashboard = () => {
     }
   };
 
-  if (loading || authLoading) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }}>
           <Zap className="w-12 h-12 text-emerald-500" />
         </motion.div>
@@ -206,14 +234,14 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
+    <div className="min-h-screen bg-white text-gray-900">
       {/* Sidebar */}
       <motion.aside
         animate={{ x: sidebarOpen ? 0 : -300 }}
-        className="fixed left-0 top-0 h-screen w-72 bg-gray-950 border-r border-gray-700 p-6 overflow-y-auto z-40"
+        className="fixed left-0 top-0 h-screen w-72 bg-gray-50 border-r border-gray-200 p-6 overflow-y-auto z-40"
       >
         <div className="mb-8">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-blue-400 bg-clip-text text-transparent">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
             Shramic
           </h1>
           <p className="text-xs text-gray-500 mt-1">Equipment Management</p>
@@ -235,8 +263,8 @@ const Dashboard = () => {
                 onClick={() => setActiveTab(item.id)}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all ${
                   activeTab === item.id
-                    ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/50"
-                    : "text-gray-400 hover:text-white hover:bg-gray-800"
+                    ? "bg-emerald-600 text-white shadow-lg"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                 }`}
               >
                 <Icon className="w-5 h-5" />
@@ -248,7 +276,7 @@ const Dashboard = () => {
 
         <button
           onClick={handleLogout}
-          className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-red-400 hover:bg-red-950 transition-all"
+          className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-all"
         >
           <LogOut className="w-5 h-5" />
           <span>Logout</span>
@@ -258,22 +286,24 @@ const Dashboard = () => {
       {/* Main Content */}
       <div className={`transition-all ${sidebarOpen ? "ml-72" : "ml-0"}`}>
         {/* Header */}
-        <header className="sticky top-0 bg-gray-950 border-b border-gray-700 p-6 flex justify-between items-center z-30">
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 hover:bg-gray-800 rounded-lg">
+        <header className="sticky top-0 bg-white border-b border-gray-200 p-6 flex justify-between items-center z-30 shadow-sm">
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 hover:bg-gray-100 rounded-lg">
             {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
           <div className="flex items-center space-x-4">
-            <Bell className="w-6 h-6 text-gray-400 cursor-pointer hover:text-white" />
-            <Settings className="w-6 h-6 text-gray-400 cursor-pointer hover:text-white" />
-            <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-blue-400 rounded-full" />
+            <Bell className="w-6 h-6 text-gray-600 cursor-pointer hover:text-gray-900" />
+            <Settings className="w-6 h-6 text-gray-600 cursor-pointer hover:text-gray-900" />
+            <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-blue-500 rounded-full" />
           </div>
         </header>
 
         <main className="p-8 space-y-8">
           {/* Welcome Section */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-2">
-            <h1 className="text-4xl font-bold">Welcome back, {ownerData?.name ?? "Owner"}</h1>
-            <p className="text-gray-400">{ownerData?.company ?? "Loading..."}</p>
+            <h1 className="text-4xl font-bold text-gray-900">
+              Welcome back, {ownerData?.name || "Owner"}
+            </h1>
+            <p className="text-gray-600">{ownerData?.company || "Loading..."}</p>
           </motion.div>
 
           {/* Overview Tab */}
@@ -283,59 +313,59 @@ const Dashboard = () => {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <motion.div
                   whileHover={{ y: -5 }}
-                  className="bg-gradient-to-br from-gray-800 to-gray-900 p-6 rounded-xl border border-gray-700 hover:border-emerald-500 transition-colors"
+                  className="bg-white p-6 rounded-xl border-2 border-gray-200 hover:border-emerald-500 transition-colors shadow-sm"
                 >
-                  <Package className="w-8 h-8 text-emerald-400 mb-4" />
-                  <p className="text-gray-400 text-sm">Total Equipment</p>
-                  <p className="text-3xl font-bold mt-2">{equipmentStats.total}</p>
+                  <Package className="w-8 h-8 text-emerald-600 mb-4" />
+                  <p className="text-gray-600 text-sm">Total Equipment</p>
+                  <p className="text-3xl font-bold mt-2 text-gray-900">{equipmentStats.total}</p>
                 </motion.div>
 
                 <motion.div
                   whileHover={{ y: -5 }}
-                  className="bg-gradient-to-br from-green-900/30 to-gray-900 p-6 rounded-xl border border-green-700/50 hover:border-green-500 transition-colors"
+                  className="bg-green-50 p-6 rounded-xl border-2 border-green-200 hover:border-green-500 transition-colors shadow-sm"
                 >
-                  <CheckCircle className="w-8 h-8 text-green-400 mb-4" />
-                  <p className="text-gray-400 text-sm">Available</p>
-                  <p className="text-3xl font-bold mt-2">{equipmentStats.available}</p>
+                  <CheckCircle className="w-8 h-8 text-green-600 mb-4" />
+                  <p className="text-gray-600 text-sm">Available</p>
+                  <p className="text-3xl font-bold mt-2 text-gray-900">{equipmentStats.available}</p>
                 </motion.div>
 
                 <motion.div
                   whileHover={{ y: -5 }}
-                  className="bg-gradient-to-br from-blue-900/30 to-gray-900 p-6 rounded-xl border border-blue-700/50 hover:border-blue-500 transition-colors"
+                  className="bg-blue-50 p-6 rounded-xl border-2 border-blue-200 hover:border-blue-500 transition-colors shadow-sm"
                 >
-                  <Zap className="w-8 h-8 text-blue-400 mb-4" />
-                  <p className="text-gray-400 text-sm">Rented</p>
-                  <p className="text-3xl font-bold mt-2">{equipmentStats.rented}</p>
+                  <Zap className="w-8 h-8 text-blue-600 mb-4" />
+                  <p className="text-gray-600 text-sm">Rented</p>
+                  <p className="text-3xl font-bold mt-2 text-gray-900">{equipmentStats.rented}</p>
                 </motion.div>
 
                 <motion.div
                   whileHover={{ y: -5 }}
-                  className="bg-gradient-to-br from-orange-900/30 to-gray-900 p-6 rounded-xl border border-orange-700/50 hover:border-orange-500 transition-colors"
+                  className="bg-orange-50 p-6 rounded-xl border-2 border-orange-200 hover:border-orange-500 transition-colors shadow-sm"
                 >
-                  <Wrench className="w-8 h-8 text-orange-400 mb-4" />
-                  <p className="text-gray-400 text-sm">Maintenance</p>
-                  <p className="text-3xl font-bold mt-2">{equipmentStats.maintenance}</p>
+                  <Wrench className="w-8 h-8 text-orange-600 mb-4" />
+                  <p className="text-gray-600 text-sm">Maintenance</p>
+                  <p className="text-3xl font-bold mt-2 text-gray-900">{equipmentStats.maintenance}</p>
                 </motion.div>
               </div>
 
               {/* Earnings Summary */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {[
-                  { label: "Today", value: earnings.today, icon: Calendar, color: "from-blue-600 to-blue-400" },
-                  { label: "This Month", value: earnings.month, icon: TrendingUp, color: "from-emerald-600 to-emerald-400" },
-                  { label: "Lifetime", value: earnings.lifetime, icon: TrendingUp, color: "from-purple-600 to-purple-400" },
-                  { label: "Pending Payout", value: earnings.pending, icon: Clock, color: "from-yellow-600 to-yellow-400" }
+                  { label: "Today", value: earnings.today, icon: Calendar, bgColor: "bg-blue-50", borderColor: "border-blue-200", textColor: "text-blue-600" },
+                  { label: "This Month", value: earnings.month, icon: TrendingUp, bgColor: "bg-emerald-50", borderColor: "border-emerald-200", textColor: "text-emerald-600" },
+                  { label: "Lifetime", value: earnings.lifetime, icon: TrendingUp, bgColor: "bg-purple-50", borderColor: "border-purple-200", textColor: "text-purple-600" },
+                  { label: "Pending", value: earnings.pending, icon: DollarSign, bgColor: "bg-yellow-50", borderColor: "border-yellow-200", textColor: "text-yellow-600" }
                 ].map((item, idx) => {
                   const Icon = item.icon;
                   return (
                     <motion.div
                       key={idx}
                       whileHover={{ y: -5 }}
-                      className={`bg-gradient-to-br ${item.color}/20 p-6 rounded-xl border border-gray-700 hover:border-gray-500 transition-colors`}
+                      className={`${item.bgColor} p-6 rounded-xl border-2 ${item.borderColor} shadow-sm`}
                     >
-                      <Icon className={`w-8 h-8 mb-4 text-${item.color.split("-")[1]}-400`} />
-                      <p className="text-gray-400 text-sm">{item.label}</p>
-                      <p className="text-3xl font-bold mt-2">₹{item.value.toLocaleString()}</p>
+                      <Icon className={`w-8 h-8 mb-4 ${item.textColor}`} />
+                      <p className="text-gray-600 text-sm">{item.label}</p>
+                      <p className="text-3xl font-bold mt-2 text-gray-900">₹{item.value.toLocaleString()}</p>
                     </motion.div>
                   );
                 })}
@@ -344,16 +374,16 @@ const Dashboard = () => {
               {/* Bookings Summary */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[
-                  { label: "Upcoming Requests", count: bookingStats.upcoming, color: "text-blue-400" },
-                  { label: "Ongoing Rentals", count: bookingStats.ongoing, color: "text-green-400" },
-                  { label: "Completed", count: bookingStats.completed, color: "text-purple-400" }
+                  { label: "Upcoming Requests", count: bookingStats.upcoming, color: "text-blue-600" },
+                  { label: "Ongoing Rentals", count: bookingStats.ongoing, color: "text-green-600" },
+                  { label: "Completed", count: bookingStats.completed, color: "text-purple-600" }
                 ].map((item, idx) => (
                   <motion.div
                     key={idx}
                     whileHover={{ y: -5 }}
-                    className="bg-gray-800 p-6 rounded-xl border border-gray-700 hover:border-emerald-500 transition-colors"
+                    className="bg-white p-6 rounded-xl border-2 border-gray-200 hover:border-emerald-500 transition-colors shadow-sm"
                   >
-                    <p className="text-gray-400 text-sm mb-4">{item.label}</p>
+                    <p className="text-gray-600 text-sm mb-4">{item.label}</p>
                     <p className={`text-4xl font-bold ${item.color}`}>{item.count}</p>
                   </motion.div>
                 ))}
@@ -365,46 +395,53 @@ const Dashboard = () => {
           {activeTab === "equipment" && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
               <h2 className="text-2xl font-bold">Your Equipment</h2>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {equipmentList.map((equip, idx) => (
-                  <motion.div
-                    key={equip.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.1 }}
-                    className="bg-gray-800 rounded-xl p-6 border border-gray-700 hover:border-emerald-500 transition-colors"
-                  >
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h3 className="text-xl font-bold">{equip.brand} {equip.modelName}</h3>
-                        <p className="text-gray-400 text-sm">{equip.category} - {equip.subCategory}</p>
+              {equipmentList.length === 0 ? (
+                <div className="bg-gray-50 p-12 rounded-xl border-2 border-gray-200 text-center">
+                  <Package className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                  <p className="text-gray-600">No equipment found. Add your first equipment to get started!</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {equipmentList.map((equip, idx) => (
+                    <motion.div
+                      key={equip.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.1 }}
+                      className="bg-white rounded-xl p-6 border-2 border-gray-200 hover:border-emerald-500 transition-colors shadow-sm"
+                    >
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h3 className="text-xl font-bold text-gray-900">{equip.brand} {equip.modelName}</h3>
+                          <p className="text-gray-600 text-sm">{equip.category} - {equip.subCategory}</p>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                          equip.currentStatus === "Available" ? "bg-green-100 text-green-700" :
+                          equip.currentStatus === "Rented" ? "bg-blue-100 text-blue-700" :
+                          "bg-orange-100 text-orange-700"
+                        }`}>
+                          {equip.currentStatus || "Available"}
+                        </span>
                       </div>
-                      <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                        equip.currentStatus === "Available" ? "bg-green-500/20 text-green-400" :
-                        equip.currentStatus === "Rented" ? "bg-blue-500/20 text-blue-400" :
-                        "bg-orange-500/20 text-orange-400"
-                      }`}>
-                        {equip.currentStatus || "Available"}
-                      </span>
-                    </div>
-                    <p className="text-gray-300 text-sm mb-4">{equip.equipmentTitle}</p>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => toggleEquipmentStatus(equip.id, "Available")}
-                        className="flex-1 px-3 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm transition-colors"
-                      >
-                        Available
-                      </button>
-                      <button
-                        onClick={() => toggleEquipmentStatus(equip.id, "Maintenance")}
-                        className="flex-1 px-3 py-2 bg-orange-600 hover:bg-orange-700 rounded-lg text-sm transition-colors"
-                      >
-                        Maintenance
-                      </button>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+                      <p className="text-gray-700 text-sm mb-4">{equip.equipmentTitle}</p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => toggleEquipmentStatus(equip.id, "Available")}
+                          className="flex-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition-colors"
+                        >
+                          Available
+                        </button>
+                        <button
+                          onClick={() => toggleEquipmentStatus(equip.id, "Maintenance")}
+                          className="flex-1 px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm transition-colors"
+                        >
+                          Maintenance
+                        </button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -412,29 +449,36 @@ const Dashboard = () => {
           {activeTab === "bookings" && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
               <h2 className="text-2xl font-bold">Recent Bookings</h2>
-              <div className="space-y-4">
-                {bookings.slice(0, 5).map((booking, idx) => (
-                  <motion.div
-                    key={idx}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="bg-gray-800 p-6 rounded-xl border border-gray-700 flex justify-between items-center hover:border-emerald-500 transition-colors"
-                  >
-                    <div className="flex-1">
-                      <p className="font-semibold">{booking.renterName || "Renter"}</p>
-                      <p className="text-gray-400 text-sm">₹{booking.totalAmount || 0}</p>
-                    </div>
-                    <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                      booking.status === "pending" ? "bg-yellow-500/20 text-yellow-400" :
-                      booking.status === "confirmed" ? "bg-blue-500/20 text-blue-400" :
-                      booking.status === "ongoing" ? "bg-green-500/20 text-green-400" :
-                      "bg-gray-500/20 text-gray-400"
-                    }`}>
-                      {(booking.status ?? "pending").charAt(0).toUpperCase() + (booking.status ?? "pending").slice(1)}
-                    </span>
-                  </motion.div>
-                ))}
-              </div>
+              {bookings.length === 0 ? (
+                <div className="bg-gray-50 p-12 rounded-xl border-2 border-gray-200 text-center">
+                  <Calendar className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                  <p className="text-gray-600">No bookings yet</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {bookings.slice(0, 10).map((booking, idx) => (
+                    <motion.div
+                      key={idx}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="bg-white p-6 rounded-xl border-2 border-gray-200 flex justify-between items-center hover:border-emerald-500 transition-colors shadow-sm"
+                    >
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-900">{booking.renterName || "Renter"}</p>
+                        <p className="text-gray-600 text-sm">₹{booking.totalAmount || 0}</p>
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                        booking.status === "pending" ? "bg-yellow-100 text-yellow-700" :
+                        booking.status === "confirmed" ? "bg-blue-100 text-blue-700" :
+                        booking.status === "ongoing" ? "bg-green-100 text-green-700" :
+                        "bg-gray-100 text-gray-700"
+                      }`}>
+                        {(booking.status ?? "pending").charAt(0).toUpperCase() + (booking.status ?? "pending").slice(1)}
+                      </span>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -442,15 +486,15 @@ const Dashboard = () => {
           {activeTab === "earnings" && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
               <h2 className="text-2xl font-bold">Earnings & Payouts</h2>
-              <div className="bg-gray-800 p-8 rounded-xl border border-gray-700">
+              <div className="bg-white p-8 rounded-xl border-2 border-gray-200 shadow-sm">
                 <div className="grid grid-cols-2 gap-8">
                   <div>
-                    <p className="text-gray-400 mb-2">Total This Month</p>
-                    <p className="text-4xl font-bold text-emerald-400">₹{earnings.month.toLocaleString()}</p>
+                    <p className="text-gray-600 mb-2">Total This Month</p>
+                    <p className="text-4xl font-bold text-emerald-600">₹{earnings.month.toLocaleString()}</p>
                   </div>
                   <div>
-                    <p className="text-gray-400 mb-2">Pending Payout</p>
-                    <p className="text-4xl font-bold text-yellow-400">₹{earnings.pending.toLocaleString()}</p>
+                    <p className="text-gray-600 mb-2">Pending Payout</p>
+                    <p className="text-4xl font-bold text-yellow-600">₹{earnings.pending.toLocaleString()}</p>
                   </div>
                 </div>
               </div>
@@ -461,9 +505,9 @@ const Dashboard = () => {
           {activeTab === "maintenance" && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
               <h2 className="text-2xl font-bold">Maintenance & Service</h2>
-              <div className="bg-gray-800 p-8 rounded-xl border border-gray-700 text-center text-gray-400">
-                <Wrench className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                <p>Maintenance logs for your equipment will appear here</p>
+              <div className="bg-gray-50 p-12 rounded-xl border-2 border-gray-200 text-center">
+                <Wrench className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                <p className="text-gray-600">Maintenance logs for your equipment will appear here</p>
               </div>
             </motion.div>
           )}
@@ -472,9 +516,9 @@ const Dashboard = () => {
           {activeTab === "messages" && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
               <h2 className="text-2xl font-bold">Messages</h2>
-              <div className="bg-gray-800 p-8 rounded-xl border border-gray-700 text-center text-gray-400">
-                <MessageSquare className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                <p>Real-time chat with renters coming soon</p>
+              <div className="bg-gray-50 p-12 rounded-xl border-2 border-gray-200 text-center">
+                <MessageSquare className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                <p className="text-gray-600">Real-time chat with renters coming soon</p>
               </div>
             </motion.div>
           )}
