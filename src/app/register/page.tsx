@@ -42,6 +42,16 @@ export default function ShramicRegistration() {
   const [submissionSuccess, setSubmissionSuccess] = useState(false);
   const [listingId, setListingId] = useState("");
   const recaptchaContainerRef = useRef<HTMLDivElement | null>(null);
+  
+  // Auto-dismiss error after 5 seconds
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError("");
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   const [formData, setFormData] = useState({
     // Step 1: Equipment Type
