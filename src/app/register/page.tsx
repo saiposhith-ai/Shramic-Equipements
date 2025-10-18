@@ -97,6 +97,7 @@ export default function ShramicRegistration() {
     rentalPricePerWeek: "",
     rentalPricePerMonth: "",
     minRentalDuration: "",
+    minRentalDurationUnit: "day",
     securityDeposit: "",
     operatorIncluded: false,
     sellingPrice: "",
@@ -119,6 +120,7 @@ export default function ShramicRegistration() {
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [documentFiles, setDocumentFiles] = useState<File[]>([]);
+  const [documentNames, setDocumentNames] = useState<string[]>([]);
 
   useEffect(() => {
     if (recaptchaContainerRef.current && !window.recaptchaVerifier) {
@@ -197,7 +199,9 @@ export default function ShramicRegistration() {
 
   const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setDocumentFiles(Array.from(e.target.files));
+      const files = Array.from(e.target.files);
+      setDocumentFiles(files);
+      setDocumentNames(files.map(f => f.name));
     }
   };
 
@@ -701,9 +705,23 @@ export default function ShramicRegistration() {
                 multiple
                 accept=".pdf,.jpg,.jpeg,.png"
                 onChange={handleDocumentChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
               />
-              <p className="text-xs text-gray-500 mt-1">Optional but recommended for trust</p>
+              <p className="text-xs text-gray-500 mt-1">Optional but recommended for trust • Multiple files allowed</p>
+              {documentNames.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <p className="text-sm font-medium text-gray-700">{documentNames.length} file(s) selected:</p>
+                  <div className="space-y-2">
+                    {documentNames.map((name, idx) => (
+                      <div key={idx} className="flex items-center space-x-2 bg-orange-50 p-2 rounded-lg">
+                        <FileText className="w-4 h-4 text-orange-600" />
+                        <span className="text-sm text-gray-700 truncate flex-1">{name}</span>
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex space-x-4">
               <button
@@ -893,27 +911,51 @@ export default function ShramicRegistration() {
                       className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Minimum Rental Duration</label>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Minimum Rental Duration</label>
+                  <div className="flex space-x-3">
                     <input
-                      type="text"
+                      type="number"
                       name="minRentalDuration"
                       value={formData.minRentalDuration}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none"
-                      placeholder="e.g., 1 day, 1 week"
+                      min="1"
+                      className="w-32 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none"
+                      placeholder="Enter"
                     />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Security Deposit (₹)</label>
-                    <input
-                      type="number"
-                      name="securityDeposit"
-                      value={formData.securityDeposit}
+                    <select
+                      name="minRentalDurationUnit"
+                      value={formData.minRentalDurationUnit}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none"
-                    />
+                      className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none bg-white cursor-pointer"
+                    >
+                      <option value="hour">Hour(s)</option>
+                      <option value="day">Day(s)</option>
+                      <option value="week">Week(s)</option>
+                      <option value="month">Month(s)</option>
+                    </select>
                   </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Security Deposit (₹)</label>
+                  <input
+                    type="number"
+                    name="securityDeposit"
+                    value={formData.securityDeposit}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none"
+                  />
+                </div>
+                   <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Security Deposit (₹)</label>
+                  <input
+                    type="number"
+                    name="securityDeposit"
+                    value={formData.securityDeposit}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none"
+                  />
                 </div>
                 <label className="flex items-center space-x-2">
                   <input
@@ -1234,15 +1276,31 @@ export default function ShramicRegistration() {
           <AnimatePresence>
             {error && (
               <motion.div
-                initial={{ opacity: 0, x: -20 }}
+                initial={{ opacity: 0, x: 300 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0 }}
-                className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg"
+                exit={{ opacity: 0, x: 300 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                className="fixed top-4 right-4 z-50 bg-red-500 text-white px-6 py-4 rounded-xl shadow-2xl max-w-md"
               >
-                <div className="flex items-center space-x-2">
-                  <AlertCircle className="w-5 h-5 text-red-500" />
-                  <p className="text-red-800">{error}</p>
+                <div className="flex items-start space-x-3">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="font-semibold">Error</p>
+                    <p className="text-sm">{error}</p>
+                  </div>
+                  <button
+                    onClick={() => setError("")}
+                    className="text-white hover:text-gray-200 ml-2"
+                  >
+                    ×
+                  </button>
                 </div>
+                <motion.div
+                  initial={{ width: "100%" }}
+                  animate={{ width: "0%" }}
+                  transition={{ duration: 5, ease: "linear" }}
+                  className="absolute bottom-0 left-0 h-1 bg-white/30"
+                />
               </motion.div>
             )}
           </AnimatePresence>
