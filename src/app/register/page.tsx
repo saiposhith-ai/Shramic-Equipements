@@ -924,6 +924,7 @@ export default function ShramicRegistration() {
               label="Compliance Documentation Upload"
               onChange={handleDocumentChange}
               accept=".pdf,.jpg,.jpeg,.png"
+              multiple={true}
               maxFiles={5}
             />
             <AnimatePresence>
