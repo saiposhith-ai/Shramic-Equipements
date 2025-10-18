@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, signOut } from "firebase/auth";
 import { getFirestore, collection, query, where, getDocs, doc, getDoc, updateDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
@@ -10,6 +11,16 @@ import {
   Wrench, Calendar, DollarSign, Package, Zap, TrendingDown, Clock,
   CheckCircle, XCircle, Eye, EyeOff
 } from "lucide-react";
+
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+};
 
 interface Equipment {
   id: string;
@@ -46,18 +57,12 @@ interface Earnings {
 
 const Dashboard = () => {
   const router = useRouter();
-  const [auth, setAuth] = useState<any>(null);
-  const [db, setDb] = useState<any>(null);
   
-  useEffect(() => {
-    // Only initialize Firebase on client side
-    const auth = getAuth();
-    const db = getFirestore();
-    setAuth(auth);
-    setDb(db);
-  }, []);
-
-  const user = auth?.currentUser;
+  // Initialize Firebase
+  const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const user = auth.currentUser;
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [equipmentList, setEquipmentList] = useState<Equipment[]>([]);
@@ -72,15 +77,13 @@ const Dashboard = () => {
       router.push("/login");
       return;
     }
-    if (auth && db) {
-      fetchDashboardData();
-    }
-  }, [user, auth, db]);
+    fetchDashboardData();
+  }, [user]);
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      if (!user?.phoneNumber || !db) return;
+      if (!user?.phoneNumber) return;
 
       // Fetch equipment list
       const equipmentRef = collection(db, "equipments");
@@ -114,7 +117,7 @@ const Dashboard = () => {
       }
       setBookings(allBookings);
 
-      // Calculate earnings (mock calculation based on bookings)
+      // Calculate earnings
       calculateEarnings(allBookings);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
